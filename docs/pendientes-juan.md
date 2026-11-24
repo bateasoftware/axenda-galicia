@@ -2,7 +2,7 @@
 
 Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisiones. Cada punto dice **qué** hacer, **por qué**, **dónde** y **qué me tienes que devolver**. Las variables de entorno van en Vercel (Settings → Environment Variables) y en tu `.env.local` para probar en local. **No me pases claves por el chat.**
 
-Última actualización: bloque 5 (WhatsApp y Supabase).
+Última actualización: bloque 6 (panel de revisión).
 
 ## Bloque 1 · Fuentes
 
@@ -124,3 +124,18 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
 
 - [ ] **Política de privacidad y aviso legal.** Hacen falta para el modo Live de Meta y por el RGPD: guardamos el número de quien envía, solo para avisarle, y se borra al avisarle o al descartar.
   - **Devuélveme:** quién es el responsable (nombre o razón social, NIF y email de contacto). Con eso redacto `/privacidad` y `/aviso-legal`.
+
+## Bloque 6 · Panel de revisión (/admin)
+
+- [ ] **Elegir la contraseña del panel** y ponerla como `ADMIN_CLAVE` en Vercel (Production) y en tu `.env.local`.
+  - Mínimo 8 caracteres; mejor una frase larga o `openssl rand -base64 24`.
+  - **Por qué:** sin ella, `/admin` no deja entrar. Si cambias la clave, se cierran todas las sesiones abiertas.
+  - **Dónde:** Vercel → *Settings → Environment Variables*; vuelve a desplegar.
+  - **Devuélveme:** nada.
+- [ ] **Saber cómo se publica según dónde estés:**
+  - **En local** (`npm run dev` → http://localhost:3000/admin): publicar escribe en `data/eventos/` y copia el cartel a `public/carteles/`. Después tienes que hacer `git commit` y `push`.
+  - **En Vercel** (con Supabase): publicar guarda en Supabase y la web se actualiza sola en unos segundos.
+- [ ] **Avisos al organizador:**
+  - Si vino por WhatsApp, se le manda solo (con la plantilla del bloque 5 si pasaron más de 24 h).
+  - Si vino por email o el formulario, el panel te prepara el mensaje para copiar o responder.
+  - Su contacto se borra en cuanto se publica o se descarta el evento.

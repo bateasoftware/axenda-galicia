@@ -199,7 +199,9 @@ export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]
             <Image src={e.cartel} alt={`Cartel: ${e.titulo}`} width={680} height={900} className="h-auto w-full" priority />
           </a>
         )}
-        <p className="mt-2 text-xs text-[var(--gris)]">Cartel facilitado por la organización. Comprueba los detalles antes de ir.</p>
+        <p className="mt-2 text-xs text-[var(--gris)]">
+          {e.cartel ? "Cartel facilitado por la organización. " : ""}Comprueba los detalles antes de ir.
+        </p>
       </aside>
     </article>
   );
