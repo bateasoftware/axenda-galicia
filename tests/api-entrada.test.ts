@@ -33,11 +33,11 @@ function peticion({ clave = SECRETO, imagen, canal }: { clave?: string | null; i
 
 describe("POST /api/entrada", () => {
   test("503 si falta configuración", async () => {
-    delete process.env.GITHUB_TOKEN;
+    delete process.env.ANTHROPIC_API_KEY;
     try {
       assert.equal((await POST(peticion())).status, 503);
     } finally {
-      process.env.GITHUB_TOKEN = "x";
+      process.env.ANTHROPIC_API_KEY = "x";
     }
   });
 
@@ -55,7 +55,7 @@ describe("POST /api/entrada", () => {
     assert.equal((await POST(peticion({ imagen: new Blob([new Uint8Array(4 * 1024 * 1024 + 1)]) }))).status, 413);
   });
 
-  test("415 si el fichero no es una imagen", async () => {
+  test("415 si el fichero no es una imagen ni un PDF", async () => {
     const r = await POST(peticion({ imagen: new Blob(["no soy una imagen"]) }));
     assert.equal(r.status, 415);
   });

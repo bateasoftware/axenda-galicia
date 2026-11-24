@@ -28,7 +28,7 @@ type Fila = {
 const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 const BUCKET = "carteles";
 
-export function supabaseConfigurado(env = process.env): boolean {
+export function supabaseConfigurado(env: Record<string, string | undefined> = process.env): boolean {
   return !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
 }
 

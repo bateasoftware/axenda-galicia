@@ -1,7 +1,11 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
-import { cuerpoPR, ETIQUETA, limpiarSlug, procesarEntrada, slugLibre, type Entrada } from "../src/lib/entrada";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { almacenLocal } from "../src/lib/almacen";
+import { cuerpoPR, ETIQUETA, limpiarSlug, procesarEntrada, procesarEntradaGitHub, slugLibre, type Entrada } from "../src/lib/entrada";
 import type { ResultadoExtraccion } from "../src/lib/extraccion";
 import type { ClienteGitHub, PR } from "../src/lib/github";
 import { normalizarCartel } from "../src/lib/imagen";
@@ -31,9 +35,22 @@ function githubFalso({ ficheros = [] as string[], ramas = [] as string[], prs = 
 const extraido: Omit<Evento, "fuente" | "cartel"> & Partial<Evento> = evento({ inferido: ["año"] });
 delete extraido.fuente;
 delete extraido.cartel;
-const extraccionOk = async (): Promise<ResultadoExtraccion> => ({ tipo: "ok", evento: { ...extraido, slug: "Magosto Gondomar 2026" } });
+const extraccionOk = async (): Promise<ResultadoExtraccion> => ({ tipo: "ok", eventos: [{ ...extraido, slug: "Magosto Gondomar 2026" }] });
+const programa = async (): Promise<ResultadoExtraccion> => ({
+  tipo: "ok",
+  eventos: [
+    { ...extraido, slug: "acendido-2026", titulo: "Acendido" },
+    { ...extraido, slug: "cabalgata-2026", titulo: "Cabalgata", sesiones: [{ inicio: "2027-01-05T18:00" }] },
+  ],
+});
 
-const entrada: Entrada = { imagen: Buffer.from("jpeg"), hash: "abc123", canal: "email", recibido: "2026-11-19T09:52", nota: "Tel. 600 000 000" };
+const entrada: Entrada = {
+  archivo: { datos: Buffer.from("jpeg"), tipo: "image/jpeg" },
+  hash: "abc123",
+  canal: "email",
+  recibido: "2026-11-19T09:52",
+  nota: "Tel. 600 000 000",
+};
 
 describe("limpiarSlug", () => {
   test("pasa a kebab-case sin tildes", () => assert.equal(limpiarSlug("Magosto en Panxón, 2026!", "2026-11-19T09:52"), "magosto-en-panxon-2026"));
@@ -47,10 +64,10 @@ describe("slugLibre", () => {
   });
 });
 
-describe("procesarEntrada", () => {
+describe("procesarEntradaGitHub", () => {
   test("crea rama, sube cartel y JSON, y abre el PR etiquetado", async () => {
     const { gh, registro } = githubFalso();
-    const r = await procesarEntrada(entrada, { github: gh, extraer: extraccionOk });
+    const r = await procesarEntradaGitHub(entrada, { github: gh, extraer: extraccionOk });
     assert.equal(r.estado, "creado");
     assert.deepEqual([...registro.subidos.keys()], ["public/carteles/magosto-gondomar-2026.jpg", "data/eventos/magosto-gondomar-2026.json"]);
     const json = JSON.parse(registro.subidos.get("data/eventos/magosto-gondomar-2026.json")!.toString());
@@ -63,7 +80,7 @@ describe("procesarEntrada", () => {
 
   test("el PR no incluye el texto ni los datos de quien envía", async () => {
     const { gh, registro } = githubFalso();
-    await procesarEntrada(entrada, { github: gh, extraer: extraccionOk });
+    await procesarEntradaGitHub(entrada, { github: gh, extraer: extraccionOk });
     assert.ok(!registro.creados[0].cuerpo.includes("600 000 000"));
     assert.ok(registro.creados[0].cuerpo.includes("<!-- axenda:hash=abc123 -->"));
   });
@@ -72,7 +89,7 @@ describe("procesarEntrada", () => {
     const previo: PR = { numero: 3, url: "https://github.com/x/y/pull/3", estado: "open", fusionado: false, cuerpo: "…<!-- axenda:hash=abc123 -->" };
     const { gh, registro } = githubFalso({ prs: [previo] });
     let llamadas = 0;
-    const r = await procesarEntrada(entrada, { github: gh, extraer: async () => (llamadas++, extraccionOk()) });
+    const r = await procesarEntradaGitHub(entrada, { github: gh, extraer: async () => (llamadas++, extraccionOk()) });
     assert.deepEqual(r, { estado: "duplicado", pr: previo.url });
     assert.equal(llamadas, 0, "no gasta una llamada a la IA");
     assert.equal(registro.comentarios.length, 1);
@@ -81,22 +98,86 @@ describe("procesarEntrada", () => {
 
   test("si el modelo lo rechaza, no toca GitHub", async () => {
     const { gh, registro } = githubFalso();
-    const r = await procesarEntrada(entrada, { github: gh, extraer: async () => ({ tipo: "rechazado", categoria: "general_harms" }) });
+    const r = await procesarEntradaGitHub(entrada, { github: gh, extraer: async () => ({ tipo: "rechazado", categoria: "general_harms" }) });
     assert.equal(r.estado, "rechazado");
     assert.equal(registro.subidos.size, 0);
   });
 
   test("con errores de validación abre el PR igualmente, marcado para corregir", async () => {
     const { gh, registro } = githubFalso();
-    const r = await procesarEntrada(entrada, {
+    const r = await procesarEntradaGitHub(entrada, {
       github: gh,
-      extraer: async () => ({ tipo: "ok", evento: { ...extraido, slug: "x-2026", categorias: [], sesiones: [{ inicio: "22/11" }] } }),
+      extraer: async () => ({ tipo: "ok", eventos: [{ ...extraido, slug: "x-2026", categorias: [], sesiones: [{ inicio: "22/11" }] }] }),
     });
     assert.equal(r.estado, "creado");
-    assert.ok(r.estado === "creado" && r.errores.length >= 2);
+    assert.ok(r.estado === "creado" && r.eventos[0].errores.length >= 2);
     assert.match(registro.creados[0].titulo, /^⚠️/);
     assert.match(registro.creados[0].cuerpo, /Hay que corregir/);
   });
+});
+
+describe("procesarEntradaGitHub con un programa", () => {
+  test("un PR con un JSON y un cartel por acto", async () => {
+    const { gh, registro } = githubFalso();
+    const r = await procesarEntradaGitHub(entrada, { github: gh, extraer: programa });
+    assert.ok(r.estado === "creado" && r.eventos.length === 2);
+    assert.equal(registro.creados.length, 1);
+    assert.match(registro.creados[0].titulo, /^2 eventos/);
+    assert.deepEqual([...registro.subidos.keys()].filter((k) => k.endsWith(".json")), ["data/eventos/acendido-2026.json", "data/eventos/cabalgata-2026.json"]);
+  });
+
+  test("un PDF no sube cartel", async () => {
+    const { gh, registro } = githubFalso();
+    await procesarEntradaGitHub({ ...entrada, archivo: { datos: Buffer.from("%PDF-"), tipo: "application/pdf" } }, { github: gh, extraer: programa });
+    assert.ok([...registro.subidos.keys()].every((k) => k.endsWith(".json")));
+    const json = JSON.parse(registro.subidos.get("data/eventos/acendido-2026.json")!.toString());
+    assert.equal(json.cartel, undefined);
+  });
+});
+
+describe("procesarEntrada con almacén", () => {
+  const conAlmacen = async (fn: (raiz: string) => Promise<void>) => {
+    const raiz = fs.mkdtempSync(path.join(os.tmpdir(), "axenda-"));
+    try {
+      await fn(raiz);
+    } finally {
+      fs.rmSync(raiz, { recursive: true, force: true });
+    }
+  };
+
+  test("un pendiente por acto, con cartel; el contacto queda aparte y fuera del evento", () =>
+    conAlmacen(async (raiz) => {
+      const a = almacenLocal(raiz);
+      const r = await procesarEntrada({ ...entrada, contacto: { canal: "whatsapp", valor: "34600000000" } }, { almacen: a, extraer: programa });
+      assert.ok(r.estado === "creado" && r.eventos.length === 2);
+      const pendientes = await a.pendientes();
+      assert.equal(pendientes.length, 2);
+      for (const p of pendientes) {
+        assert.equal(p.contacto?.valor, "34600000000");
+        assert.ok(p.cartel);
+        assert.ok(!JSON.stringify(p.evento).includes("600"));
+      }
+      // El fichero del evento (el que podría acabar en git) no lleva el teléfono
+      const ficheros = fs.readdirSync(path.join(raiz, "data", "pendientes")).filter((f) => f.endsWith(".json"));
+      for (const f of ficheros) assert.ok(!fs.readFileSync(path.join(raiz, "data", "pendientes", f), "utf8").includes("34600000000"));
+    }));
+
+  test("el mismo archivo dos veces no gasta otra llamada a la IA", () =>
+    conAlmacen(async (raiz) => {
+      const a = almacenLocal(raiz);
+      let llamadas = 0;
+      const contar = async () => (llamadas++, extraccionOk());
+      await procesarEntrada(entrada, { almacen: a, extraer: contar });
+      const r = await procesarEntrada(entrada, { almacen: a, extraer: contar });
+      assert.equal(r.estado, "duplicado");
+      assert.equal(llamadas, 1);
+    }));
+
+  test("sin eventos en el envío", () =>
+    conAlmacen(async (raiz) => {
+      const r = await procesarEntrada(entrada, { almacen: almacenLocal(raiz), extraer: async () => ({ tipo: "ok", eventos: [] }) });
+      assert.equal(r.estado, "vacio");
+    }));
 });
 
 describe("cuerpoPR", () => {

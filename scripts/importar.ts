@@ -13,6 +13,7 @@ import { almacen } from "../src/lib/almacen";
 import { fechaHoraGalicia } from "../src/lib/fechas";
 import { guardarFuentes, leerFuentes } from "../src/lib/fuentes";
 import { importarFuente } from "../src/lib/importar/ejecutar";
+import "../src/lib/importar/pdf"; // registra el importador de boletines en PDF
 
 const args = process.argv.slice(2);
 const simular = args.includes("--simular");

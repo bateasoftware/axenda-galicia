@@ -44,7 +44,8 @@ function procesarCorreos() {
     var enviados = 0;
     hilo.getMessages().forEach(function (mensaje) {
       var imagenes = mensaje.getAttachments({ includeInlineImages: true }).filter(function (a) {
-        return /^image\/(jpeg|png|webp|heic|heif)$/i.test(a.getContentType()) && a.getSize() >= TAMANO_MINIMO;
+        // Carteles (imágenes) y programas en PDF
+        return /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/i.test(a.getContentType()) && a.getSize() >= TAMANO_MINIMO;
       });
       imagenes.forEach(function (adjunto) {
         if (adjunto.getSize() > TAMANO_MAXIMO) {
@@ -70,14 +71,14 @@ function procesarCorreos() {
         } catch (e) {}
         if (codigo === 201 || codigo === 200) {
           enviados++;
-          Logger.log(adjunto.getName() + " → " + cuerpo.estado + " " + (cuerpo.pr || cuerpo.motivo || ""));
+          Logger.log(adjunto.getName() + " → " + cuerpo.estado + " " + (cuerpo.pr || cuerpo.motivo || (cuerpo.eventos ? cuerpo.eventos.length + " eventos" : "")));
           if (cuerpo.estado === "rechazado") problemas.push(adjunto.getName() + ": " + cuerpo.motivo);
         } else {
           problemas.push(adjunto.getName() + ": HTTP " + codigo + " " + (cuerpo.motivo || ""));
         }
       });
     });
-    if (!enviados && !problemas.length) problemas.push("sin imágenes de cartel");
+    if (!enviados && !problemas.length) problemas.push("sin carteles ni PDF");
 
     if (problemas.length) {
       hilo.addLabel(conError);

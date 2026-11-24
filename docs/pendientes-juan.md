@@ -2,7 +2,7 @@
 
 Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisiones. Cada punto dice **qué** hacer, **por qué**, **dónde** y **qué me tienes que devolver**. Las variables de entorno van en Vercel (Settings → Environment Variables) y en tu `.env.local` para probar en local. **No me pases claves por el chat.**
 
-Última actualización: bloque 2 (importadores).
+Última actualización: bloque 3 (programas en PDF).
 
 ## Bloque 1 · Fuentes
 
@@ -37,3 +37,13 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
 - [ ] **Decidir si importamos las exposiciones y programas largos de Vigo.**
   - **Por qué:** datos.vigo.org solo da la agenda de hoy y sin hora; muchos son programas de varios meses.
   - **Devuélveme:** "sí" o "no". Si es no, filtro en el importador los que duran más de una semana.
+
+## Bloque 3 · Programas en PDF y carteles con varios eventos
+
+- [ ] **Poner `ANTHROPIC_API_KEY` en `.env.local`** si aún no está.
+  - **Por qué:** `npm run extraer` y el importador del boletín del SERGAS usan la IA.
+  - **Dónde:** https://console.anthropic.com/settings/keys
+  - **Devuélveme:** nada (no me pases la clave).
+- [ ] **Probar con un programa real**: copia un PDF (p. ej. el programa de Nadal de un concello) en `data/entrada/` y ejecuta `npm run extraer`.
+  - **Por qué:** no lo he probado contra la IA real para no gastar llamadas sin tu permiso. Los tests usan una IA simulada.
+  - **Devuélveme:** si separa bien los actos o junta o parte de más. Con eso ajusto el prompt de `src/lib/extraccion.ts`.
