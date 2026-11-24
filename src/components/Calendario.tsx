@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Evento } from "@/lib/tipos";
 import { CATEGORIAS } from "@/lib/categorias";
 import { capitalizar, diasDelEvento, nombreMes, fechaLarga } from "@/lib/fechas";
@@ -36,18 +36,26 @@ export default function Calendario({ eventos, hoy }: { eventos: Evento[]; hoy: s
     setSel(null);
   };
 
+  // En móvil la lista del día queda debajo del calendario: se desplaza hasta ella
+  const detalle = useRef<HTMLDivElement>(null);
+  const elegir = (d: string) => {
+    setSel(d);
+    if (window.matchMedia("(max-width: 1023px)").matches)
+      requestAnimationFrame(() => detalle.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
   const delDia = sel ? porDia.get(sel) ?? [] : [];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-      <div className="rounded-2xl border border-[var(--linea)] bg-white p-4">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[1.2fr_1fr]">
+      <div className="rounded-2xl border border-[var(--linea)] bg-white p-3 sm:p-4">
         <div className="mb-3 flex items-center justify-between">
           <button onClick={() => mover(-1)} className="rounded-lg px-3 py-1 hover:bg-[var(--arena)]" aria-label="Mes anterior">←</button>
-          <h3 className="font-display text-xl">{nombreMes(mes.y, mes.m)}</h3>
+          <h3 className="font-display text-xl" aria-live="polite">{nombreMes(mes.y, mes.m)}</h3>
           <button onClick={() => mover(1)} className="rounded-lg px-3 py-1 hover:bg-[var(--arena)]" aria-label="Mes siguiente">→</button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[var(--gris)]">
-          {SEMANA.map((d) => <div key={d} className="py-1">{d}</div>)}
+          {SEMANA.map((d, i) => <div key={i} className="py-1" aria-hidden>{d}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1">
           {celdas.map((d, i) => {
@@ -58,16 +66,18 @@ export default function Calendario({ eventos, hoy }: { eventos: Evento[]; hoy: s
             return (
               <button
                 key={d}
-                onClick={() => setSel(d)}
+                onClick={() => elegir(d)}
                 disabled={!evs.length}
-                className={`flex aspect-square flex-col items-center justify-start rounded-xl p-1 text-sm transition sm:aspect-[4/3] ${
+                aria-pressed={activo}
+                aria-label={`${capitalizar(fechaLarga(d))}${esHoy ? " (hoy)" : ""}: ${evs.length ? `${evs.length} ${evs.length === 1 ? "evento" : "eventos"}` : "sin eventos"}`}
+                className={`flex aspect-square min-w-0 flex-col items-center justify-start rounded-xl p-1 text-sm transition sm:aspect-[4/3] ${
                   activo ? "bg-[var(--tinta)] text-white" : evs.length ? "bg-[var(--arena)] hover:bg-[#efe3cc]" : "text-[var(--gris)]/60"
                 } ${esHoy && !activo ? "ring-2 ring-[var(--mar)]" : ""}`}
               >
-                <span className="font-medium">{Number(d.slice(8))}</span>
-                <span className="mt-auto flex flex-wrap justify-center gap-0.5 pb-0.5">
+                <span className="font-medium" aria-hidden>{Number(d.slice(8))}</span>
+                <span className="mt-auto flex flex-wrap justify-center gap-0.5 pb-0.5" aria-hidden>
                   {evs.slice(0, 4).map((e) => (
-                    <span key={e.slug} className="h-1.5 w-1.5 rounded-full" style={{ background: CATEGORIAS[e.categorias[0]].color }} />
+                    <span key={e.slug} className="h-1.5 w-1.5 rounded-full" style={{ background: CATEGORIAS[e.categorias[0]]?.color ?? "#0b5c8a" }} />
                   ))}
                 </span>
               </button>
@@ -75,7 +85,7 @@ export default function Calendario({ eventos, hoy }: { eventos: Evento[]; hoy: s
           })}
         </div>
       </div>
-      <div>
+      <div ref={detalle} className="min-w-0 scroll-mt-20">
         {sel ? (
           <>
             <h3 className="mb-3 font-display text-xl">{capitalizar(fechaLarga(sel))}</h3>

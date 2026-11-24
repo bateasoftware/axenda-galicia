@@ -17,11 +17,14 @@ Agenda de eventos de Val Miñor y Vigo (y, más adelante, de toda Galicia). Es u
 ```bash
 cp .env.example .env.local        # y pon tu ANTHROPIC_API_KEY
 # 1. Copia los carteles (tal cual vienen de WhatsApp) a data/entrada/
-npm run extraer                   # 2. La IA genera data/pendientes/<slug>.json
+npm run extraer                   # 2. La IA genera data/pendientes/<slug>.json (salta las imágenes ya extraídas)
 # 3. Revisa cada JSON: "inferido", "confianza" y las coordenadas ("aprox")
-npm run publicar                  # 4. Pasa a data/eventos/ y copia el cartel a public/carteles/
+npm run validar                   #    Comprueba eventos, pendientes y lugares.json
+npm run publicar                  # 4. Valida, pasa a data/eventos/ y copia el cartel a public/carteles/
 git add -A && git commit -m "Eventos" && git push   # 5. Vercel lo publica
 ```
+
+`publicar` no mueve nada que no pase la validación (fechas, categorías, coordenadas dentro de Galicia, slug único…) y solo borra la imagen de `data/entrada/` cuando el evento ya está escrito. El modelo de datos y sus reglas están en `src/lib/tipos.ts`.
 
 La fecha de recepción se saca del nombre del archivo de WhatsApp (`…PHOTO-2026-11-19-09-52-44.jpg`) para deducir el año cuando el cartel no lo dice.
 
@@ -31,11 +34,11 @@ La fecha de recepción se saca del nombre del archivo de WhatsApp (`…PHOTO-202
 
 | Ruta | Qué es |
 |---|---|
-| `/` | Agenda con filtros (próximos, este finde, concello, categoría) y vistas de lista, mapa y calendario |
-| `/evento/[slug]` | Ficha con cartel, datos estructurados `schema.org/Event` (para el buscador de eventos de Google), botón de añadir al calendario (.ics) y cómo llegar |
-| `/concello/[concello]` | Página SEO "Qué hacer en X" |
+| `/` | Agenda con filtros (próximos, este finde, concello, categoría) y vistas de lista, mapa y calendario. Los filtros van en la URL (`?vista=mapa&cuando=finde&concello=baiona&cat=infantil`) para poder compartirlos |
+| `/evento/[slug]` | Ficha con cartel, datos estructurados `schema.org/Event` (para el buscador de eventos de Google), botón de añadir al calendario (`/evento/[slug]/calendario.ics`) y cómo llegar |
+| `/concello/[concello]` | Página SEO "Qué hacer en X", con su propia imagen para compartir |
 | `/enviar` | Explicación para que los organizadores manden su cartel |
-| `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest` | SEO y PWA instalable, con un service worker básico sin conexión |
+| `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest` | SEO y PWA instalable. El service worker guarda las páginas visitadas para verlas sin conexión y sirve desde caché los ficheros estáticos y los carteles |
 
 ## Desarrollo
 

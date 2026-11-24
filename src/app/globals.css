@@ -30,3 +30,11 @@ body {
 .leaflet-container {
   font-family: inherit;
 }
+
+/* Filas de filtros que se desplazan en horizontal en móvil: sin barra visible */
+.sin-barra {
+  scrollbar-width: none;
+}
+.sin-barra::-webkit-scrollbar {
+  display: none;
+}

@@ -1,70 +1,141 @@
-// Modelo de datos de un evento. El extractor de carteles genera exactamente esta forma.
+// Modelo de datos de un evento. Es la única fuente de verdad: de aquí salen los tipos
+// de TypeScript, la validación de data/eventos y el formato que devuelve el extractor.
+import { z } from "zod";
 
-export type Sesion = {
+// Mensajes de error de validación en castellano
+z.config(z.locales.es());
+
+export const LISTA_CATEGORIAS = [
+  "navidad",
+  "fiestas",
+  "musica",
+  "cine",
+  "teatro",
+  "infantil",
+  "deporte",
+  "solidario",
+  "mercadillo",
+  "gastronomia",
+  "cultura",
+  "comercial",
+] as const;
+
+const RE_FECHA_HORA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const RE_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+const RE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+// Forma "plana" (solo tipos, sin formatos): es la que se manda al modelo como
+// formato de salida, porque los formatos estructurados no admiten todas las reglas.
+export const SesionBase = z.object({
   /** ISO local sin zona, p. ej. "2026-11-22T17:00" (hora de Galicia) */
-  inicio: string;
-  fin?: string;
+  inicio: z.string().describe("YYYY-MM-DDTHH:MM, hora local de Galicia"),
+  fin: z.string().optional().describe("YYYY-MM-DDTHH:MM"),
   /** Qué pasa en esa sesión, si el cartel trae programa por horas */
-  nota?: string;
-};
+  nota: z.string().optional(),
+});
 
-export type Lugar = {
-  nombre: string;
-  direccion?: string;
-  lat: number;
-  lng: number;
+export const LugarBase = z.object({
+  nombre: z.string(),
+  direccion: z.string().optional(),
+  lat: z.number(),
+  lng: z.number(),
   /** true si las coordenadas son aproximadas y conviene revisarlas */
-  aprox?: boolean;
-};
+  aprox: z.boolean().optional(),
+});
 
-export type Inscripcion = {
-  url?: string;
-  telefono?: string;
-  email?: string;
+export const InscripcionBase = z.object({
+  url: z.string().optional(),
+  telefono: z.string().optional(),
+  email: z.string().optional(),
   /** Fecha límite YYYY-MM-DD */
-  hasta?: string;
-};
+  hasta: z.string().optional().describe("YYYY-MM-DD"),
+});
 
-export type Categoria =
-  | "navidad"
-  | "fiestas"
-  | "musica"
-  | "cine"
-  | "teatro"
-  | "infantil"
-  | "deporte"
-  | "solidario"
-  | "mercadillo"
-  | "gastronomia"
-  | "cultura"
-  | "comercial";
-
-export type Evento = {
-  slug: string;
-  titulo: string;
+export const EventoBase = z.object({
+  slug: z.string().describe("kebab-case corto con lugar y año"),
+  titulo: z.string().describe("Título claro en castellano"),
   /** Título en gallego si el cartel está en gallego o lo traducimos */
-  titulo_gl?: string;
-  resumen: string;
-  sesiones: Sesion[];
-  lugares: Lugar[];
-  concello: string;
-  parroquia?: string;
-  organizadores: string[];
-  categorias: Categoria[];
-  publico?: string;
-  precio?: string;
-  inscripcion?: Inscripcion;
-  extras?: string[];
+  titulo_gl: z.string().optional(),
+  resumen: z.string().describe("1-2 frases propias, sin copiar literalmente el cartel"),
+  sesiones: z.array(SesionBase),
+  lugares: z.array(LugarBase),
+  concello: z.string(),
+  parroquia: z.string().optional(),
+  organizadores: z.array(z.string()),
+  categorias: z.array(z.enum(LISTA_CATEGORIAS)),
+  publico: z.string().optional(),
+  precio: z.string().optional(),
+  inscripcion: InscripcionBase.optional(),
+  extras: z.array(z.string()).optional(),
   /** Ruta pública del cartel, p. ej. "/carteles/xxx.jpg" */
-  cartel?: string;
-  idioma: "gl" | "es" | "mixto";
-  fuente: { canal: "whatsapp" | "formulario" | "email" | "manual"; recibido: string };
+  cartel: z.string().optional(),
+  idioma: z.enum(["gl", "es", "mixto"]),
+  fuente: z.object({
+    canal: z.enum(["whatsapp", "formulario", "email", "manual"]),
+    recibido: z.string(),
+  }),
   /** Campos deducidos, no leídos literalmente (para revisar) */
-  inferido?: string[];
+  inferido: z.array(z.string()).optional(),
   /** 0–1: seguridad de la extracción */
-  confianza: number;
+  confianza: z.number(),
   /** Evento que se repite cada año (XVI edición, "un año más"…) */
-  recurrente?: boolean;
+  recurrente: z.boolean().optional(),
   /** true si es promoción de un negocio */
-  comercial?: boolean;
-};
+  comercial: z.boolean().optional(),
+});
+
+// Forma estricta: la que deben cumplir los eventos publicados.
+const fechaHora = z.string().regex(RE_FECHA_HORA, "debe ser YYYY-MM-DDTHH:MM");
+
+export const SesionSchema = z
+  .strictObject({ ...SesionBase.shape, inicio: fechaHora, fin: fechaHora.optional() })
+  .refine((s) => !s.fin || s.fin >= s.inicio, { message: "fin es anterior a inicio", path: ["fin"] });
+
+export const LugarSchema = z.strictObject({
+  ...LugarBase.shape,
+  nombre: z.string().min(1),
+  // Caja amplia alrededor de Galicia: atrapa lat/lng cruzadas o a 0
+  lat: z.number().min(41.5).max(44),
+  lng: z.number().min(-9.5).max(-6.5),
+});
+
+export const InscripcionSchema = z.strictObject({
+  ...InscripcionBase.shape,
+  url: z.url().optional(),
+  email: z.email().optional(),
+  hasta: z.string().regex(RE_FECHA, "debe ser YYYY-MM-DD").optional(),
+});
+
+export const EventoSchema = z.strictObject({
+  ...EventoBase.shape,
+  slug: z.string().regex(RE_SLUG, "solo minúsculas, números y guiones"),
+  titulo: z.string().min(1),
+  resumen: z.string().min(1),
+  sesiones: z.array(SesionSchema).min(1, "hace falta al menos una sesión"),
+  lugares: z.array(LugarSchema).min(1, "hace falta al menos un lugar"),
+  concello: z.string().min(1),
+  organizadores: z.array(z.string().min(1)),
+  categorias: z.array(z.enum(LISTA_CATEGORIAS)).min(1, "hace falta al menos una categoría"),
+  inscripcion: InscripcionSchema.optional(),
+  cartel: z.string().regex(/^\/carteles\/[^/]+\.(jpe?g|png|webp)$/, "debe ser /carteles/<fichero>").optional(),
+  fuente: z.strictObject({ ...EventoBase.shape.fuente.shape, recibido: fechaHora }),
+  confianza: z.number().min(0).max(1),
+});
+
+export type Sesion = z.infer<typeof SesionSchema>;
+export type Lugar = z.infer<typeof LugarSchema>;
+export type Inscripcion = z.infer<typeof InscripcionSchema>;
+export type Categoria = (typeof LISTA_CATEGORIAS)[number];
+export type Evento = z.infer<typeof EventoSchema>;
+
+// Tabla de lugares conocidos (data/lugares.json), que usa el extractor
+export const LugaresSchema = z.strictObject({
+  _nota: z.string().optional(),
+  concellos: z.record(
+    z.string(),
+    z.strictObject({ lat: LugarSchema.shape.lat, lng: LugarSchema.shape.lng, parroquias: z.array(z.string()) }),
+  ),
+  lugares: z.array(
+    z.strictObject({ ...LugarSchema.shape, concello: z.string().min(1), parroquia: z.string().optional() }),
+  ),
+});

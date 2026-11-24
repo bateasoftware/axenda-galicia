@@ -71,18 +71,92 @@ export function rangoFinde(hoy: string): [string, string] {
   return [vie.toISOString().slice(0, 10), dom.toISOString().slice(0, 10)];
 }
 
-/** Fichero .ics (RFC 5545) con hora flotante local */
+/** Desfase de Madrid (+01:00 o +02:00) para una hora local "YYYY-MM-DDTHH:MM" */
+export function desfaseMadrid(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  const h = Number(iso.slice(11, 13) || 12);
+  // Se mira el desfase una hora antes en UTC: cubre bien los dos cambios de hora salvo la hora ambigua
+  const parte = new Intl.DateTimeFormat("en", { timeZone: "Europe/Madrid", timeZoneName: "shortOffset" })
+    .formatToParts(new Date(Date.UTC(y, m - 1, d, h - 1)))
+    .find((p) => p.type === "timeZoneName")?.value; // "GMT+1"
+  const n = Number(parte?.replace("GMT", "") || 1);
+  return `+${String(n).padStart(2, "0")}:00`;
+}
+
+/** "2026-11-22T17:00" → "2026-11-22T17:00:00+01:00" (para schema.org) */
+export function conZona(iso: string): string {
+  const local = iso.length > 10 ? iso : `${iso}T00:00`;
+  return `${local}:00${desfaseMadrid(local)}`;
+}
+
+/** Suma horas a una hora local sin zona, sin pasar por la zona del sistema */
+export function sumarHoras(iso: string, horas: number): string {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  const [hh, mm] = iso.slice(11, 16).split(":").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, hh + horas, mm)).toISOString().slice(0, 16);
+}
+
+/** Hora local de Madrid → UTC en formato iCalendar ("20261119T085200Z") */
+function utcICS(iso: string): string {
+  const n = Number(desfaseMadrid(iso).slice(1, 3));
+  return sumarHoras(iso, -n).replace(/[-:]/g, "") + "00Z";
+}
+
+// Definición de Europe/Madrid que exige RFC 5545 cuando se usa TZID
+const VTIMEZONE_MADRID = [
+  "BEGIN:VTIMEZONE",
+  "TZID:Europe/Madrid",
+  "BEGIN:DAYLIGHT",
+  "TZOFFSETFROM:+0100",
+  "TZOFFSETTO:+0200",
+  "TZNAME:CEST",
+  "DTSTART:19700329T020000",
+  "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+  "END:DAYLIGHT",
+  "BEGIN:STANDARD",
+  "TZOFFSETFROM:+0200",
+  "TZOFFSETTO:+0100",
+  "TZNAME:CET",
+  "DTSTART:19701025T030000",
+  "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+  "END:STANDARD",
+  "END:VTIMEZONE",
+];
+
+/** Corta una línea en trozos de 75 bytes como máximo (RFC 5545 §3.1) sin partir caracteres UTF-8 */
+function plegar(linea: string): string {
+  const enc = new TextEncoder();
+  const trozos: string[] = [];
+  let actual = "";
+  let bytes = 0;
+  for (const ch of linea) {
+    const b = enc.encode(ch).length;
+    const limite = trozos.length ? 74 : 75; // las de continuación empiezan con un espacio
+    if (bytes + b > limite) {
+      trozos.push(actual);
+      actual = "";
+      bytes = 0;
+    }
+    actual += ch;
+    bytes += b;
+  }
+  trozos.push(actual);
+  return trozos.join("\r\n ");
+}
+
+/** Fichero .ics (RFC 5545) con las horas en Europe/Madrid */
 export function generarICS(e: Evento, url: string): string {
   const fmt = (iso: string) => iso.replace(/[-:]/g, "").slice(0, 13) + "00";
   const esc = (t: string) => t.replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
   const lugar = e.lugares.map((l) => [l.nombre, l.direccion].filter(Boolean).join(", ")).join(" / ");
-  const lineas = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Axenda//ES", "CALSCALE:GREGORIAN"];
+  const lineas = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Axenda//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", ...VTIMEZONE_MADRID];
   e.sesiones.forEach((s, i) => {
-    const fin = s.fin ?? s.inicio.slice(0, 11) + String(Math.min(23, Number(s.inicio.slice(11, 13) || "10") + 2)).padStart(2, "0") + ":00";
+    // Sin hora de fin, se supone una duración de 2 horas
+    const fin = s.fin ?? sumarHoras(s.inicio, 2);
     lineas.push(
       "BEGIN:VEVENT",
       `UID:${e.slug}-${i}@axenda`,
-      `DTSTAMP:${fmt(e.fuente.recibido)}Z`,
+      `DTSTAMP:${utcICS(e.fuente.recibido)}`,
       `DTSTART;TZID=Europe/Madrid:${fmt(s.inicio)}`,
       `DTEND;TZID=Europe/Madrid:${fmt(fin)}`,
       `SUMMARY:${esc(s.nota ? `${e.titulo} – ${s.nota}` : e.titulo)}`,
@@ -93,5 +167,5 @@ export function generarICS(e: Evento, url: string): string {
     );
   });
   lineas.push("END:VCALENDAR");
-  return lineas.join("\r\n");
+  return lineas.map(plegar).join("\r\n") + "\r\n";
 }

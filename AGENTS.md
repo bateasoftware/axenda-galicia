@@ -12,9 +12,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - **Lee `docs/vision.md` antes de proponer funcionalidades**: concepto, público, fases, monetización y decisiones ya tomadas.
 - Interfaz y contenido en castellano (los eventos pueden traer título en gallego, `titulo_gl`).
-- Modelo de datos en `src/lib/tipos.ts`. Si cambia, actualiza también el esquema del prompt en `scripts/extraer.ts` y `supabase/esquema.sql`.
+- Modelo de datos en `src/lib/tipos.ts` (esquema zod: de ahí salen los tipos, la validación y el formato de salida del extractor). Si cambia, revisa las reglas del prompt en `scripts/extraer.ts` y actualiza `supabase/esquema.sql`.
+- Los datos se validan con `npm run validar`; un evento no válido en `data/eventos` hace fallar el build.
 - Los eventos se leen solo a través de `src/lib/eventos.ts` (cuando se migre a Supabase, solo cambia ese archivo).
 - Fechas como hora local de Galicia sin zona (`YYYY-MM-DDTHH:MM`). Helpers en `src/lib/fechas.ts`.
 - Lo que dependa de "hoy" se calcula en el cliente (`hoyGalicia`), nunca en el render estático.
 - Fuentes autoalojadas con @fontsource (no usar next/font/google).
-- Antes de terminar: `npm run lint && npm run build`.
+- Antes de terminar: `npm run validar && npm run lint && npm run build`.

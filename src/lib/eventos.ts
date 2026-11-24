@@ -1,34 +1,33 @@
 import "server-only";
-import fs from "node:fs";
 import path from "node:path";
 import type { Evento } from "./tipos";
 import { primerInicio } from "./fechas";
+import { formatearProblemas, leerEventos } from "./validacion";
+import { slugConcello } from "./slug";
+
+export { slugConcello };
 
 // Fase 1: los eventos viven como JSON en /data/eventos (git como CMS).
 // Fase 2: sustituir estas funciones por consultas a Supabase sin tocar las vistas.
-const DIR = path.join(process.cwd(), "data", "eventos");
+const RAIZ = process.cwd();
+const DIR = path.join(RAIZ, "data", "eventos");
 
 let cache: Evento[] | null = null;
 
 export function todosLosEventos(): Evento[] {
-  if (cache) return cache;
-  const ficheros = fs.readdirSync(DIR).filter((f) => f.endsWith(".json"));
-  cache = ficheros
-    .map((f) => JSON.parse(fs.readFileSync(path.join(DIR, f), "utf8")) as Evento)
-    .sort((a, b) => primerInicio(a).localeCompare(primerInicio(b)));
+  // En desarrollo se relee en cada petición para ver al momento los JSON editados
+  if (cache && process.env.NODE_ENV === "production") return cache;
+  const { eventos, problemas } = leerEventos(DIR, RAIZ);
+  // Un evento mal formado hace fallar el build con un mensaje claro, en vez de romper una vista
+  if (problemas.length) {
+    throw new Error(`Hay eventos no válidos en data/eventos (ejecuta npm run validar):\n${formatearProblemas(problemas)}`);
+  }
+  cache = eventos.sort((a, b) => primerInicio(a).localeCompare(primerInicio(b)));
   return cache;
 }
 
 export function eventoPorSlug(slug: string): Evento | undefined {
   return todosLosEventos().find((e) => e.slug === slug);
-}
-
-export function slugConcello(nombre: string): string {
-  return nombre
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-");
 }
 
 export function concellos(): { nombre: string; slug: string; total: number }[] {

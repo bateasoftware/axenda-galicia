@@ -1,5 +1,7 @@
 import type { Categoria } from "./tipos";
 
+// Record<Categoria, …> obliga a que estén todas las de LISTA_CATEGORIAS (tipos.ts)
+
 export const CATEGORIAS: Record<Categoria, { nombre: string; color: string; emoji: string }> = {
   navidad: { nombre: "Navidad", color: "#b42318", emoji: "🎄" },
   fiestas: { nombre: "Fiestas", color: "#c4320a", emoji: "🎉" },
@@ -14,5 +16,3 @@ export const CATEGORIAS: Record<Categoria, { nombre: string; color: string; emoj
   cultura: { nombre: "Cultura", color: "#175cd3", emoji: "📚" },
   comercial: { nombre: "Comercio local", color: "#475467", emoji: "🏪" },
 };
-
-export const LISTA_CATEGORIAS = Object.keys(CATEGORIAS) as Categoria[];
