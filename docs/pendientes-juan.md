@@ -2,7 +2,7 @@
 
 Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner claves y decidir. **No me pases claves por el chat.**
 
-Última actualización: panel con formulario por campos, cartel editable y gestión de publicados.
+Última actualización: filtro por emisor y descarte por lotes en el panel; sesión de procesado de envíos.
 
 ## Qué cuesta dinero y qué no
 
@@ -33,10 +33,27 @@ Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner cl
   - **Cuándo:** elige el día. La hora es opcional. Si dura varios días, pon el último en «Hasta el día» y deja las horas vacías. «+ Añadir otro día u horario» para más sesiones.
   - **Dónde:** escribe el nombre del sitio. Si es uno conocido, se pone su ubicación; si no, se usa el centro del concello (aproximada). Las coordenadas son opcionales, dentro de «Coordenadas».
   - **Cartel:** si no tiene, «Añadir un cartel» sube una imagen (se reduce sola). Si ya tiene, «Cambiar el cartel».
+  - **Filtrar por emisor:** debajo del título hay un botón por cada origen (`vigo-agenda-cultural`, `cultura-gal`, WhatsApp, formulario…) con su número de pendientes, y filtros para «Posibles duplicados» y «Por completar».
+  - **Descartar por lotes:** cada pendiente tiene una casilla. Marca los que quieras, o pulsa «Seleccionar los N» para marcar todos los de la vista filtrada, y «Descartar». Lo descartado no vuelve a entrar al importar.
 - **Publicados** (botón arriba, `/admin/publicados`): todos los eventos que se ven en la web, próximos y pasados. Entra en uno para **editarlo** (título, fechas, lugar, cartel…) o **retirarlo** de la web.
   - La dirección de la página (`/evento/…`) no cambia al editar.
   - Los 5 eventos iniciales viven en el repositorio (`data/eventos`). Salen marcados "Repositorio": al guardar cambios pasan a la base de datos y se editan desde ahí; al retirarlos se ocultan. No hay que tocar nada en GitHub.
   - Retirar no borra: queda guardado como descartado.
+
+## Fuentes de «revisión manual» y la sesión de procesado
+
+Las fuentes de `revision-manual` de `data/fuentes.json` (webs de concellos, bibliotecas, turismo…) **no se importan solas**: no tienen calendario ni feed. `npm run revisar-fuentes` solo te recuerda cuáles toca mirar.
+
+Para no tener que entrar tú en cada web, hay una **sesión aparte** que lo hace por ti (sin la API de pago):
+
+- **Qué haces tú:** abres la sesión «Procesar envíos de WhatsApp y enlaces» y le pasas lo que te llega:
+  - fotos de WhatsApp, con o sin texto;
+  - PDF de programas;
+  - enlaces a eventos;
+  - o le dices «revisa las fuentes de hoy».
+- **Qué hace ella:** lee cada cosa, extrae los eventos, los deja como **pendientes** y te resume qué ha dejado y qué dudas hay. Tú los revisas y publicas en `/admin`.
+- **Límites:** solo lee webs que dejan leerse (respeta `robots.txt`). **Nada de Instagram ni Facebook**: si el cartel está ahí, pásale la imagen o el texto. Nunca publica ella.
+- **Cómo funciona por dentro:** `npm run anadir-pendiente` y la guía `docs/procesar-envios.md`.
 
 ## Ahora (todo gratis), en este orden
 

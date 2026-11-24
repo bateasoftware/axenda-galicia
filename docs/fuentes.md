@@ -60,6 +60,16 @@ Sirven para **enterarse** de que hay un evento. No se copia su texto ni sus imá
 
 **Nada de extracción automática de Instagram ni de Facebook**: va contra sus condiciones. Si un cartel interesa, se pide al organizador que lo mande o se carga a mano (`npm run extraer`) con resumen propio y su permiso. Ver "Derechos sobre los carteles" en `docs/vision.md`.
 
+## Cómo se revisan las fuentes manuales
+
+`revision-manual` significa que la fuente no ofrece calendario ni feed que podamos importar. La revisión la hace la sesión de procesado de envíos (ver `docs/procesar-envios.md`):
+
+1. `npm run revisar-fuentes` dice qué toca hoy.
+2. La sesión abre cada página (respetando `robots.txt`), detecta los eventos nuevos y los añade como pendientes con `npm run anadir-pendiente`, con resumen propio, la URL de origen y `--canal manual`.
+3. Marca la fuente como revisada: `npm run revisar-fuentes -- --marcar <id>`.
+
+Para prensa y agregadores sirve igual, solo como alerta: se busca la fuente original o el cartel y no se copia ningún texto. Instagram y Facebook quedan fuera.
+
 ## Duplicados
 
 El mismo evento suele llegar por varias vías: el cartel del organizador, la web del concello, Cultura de Galicia… Al llegar, cada evento se compara con los pendientes y los publicados (mismo día, mismo concello y título parecido; `src/lib/duplicados.ts`):

@@ -102,6 +102,30 @@ export async function revisar(id: string, _previo: EstadoRevision, f: FormData):
   redirect(`/admin/publicado/${r.slug}`);
 }
 
+/** Descarta a la vez los pendientes marcados en la lista. Los descartados no vuelven a entrar al importar. */
+export async function descartarVarios(f: FormData) {
+  await exigirAdmin();
+  const a = almacen();
+  const ids = [...new Set(f.getAll("ids").map(String))].slice(0, 300);
+  let n = 0;
+  for (const id of ids) {
+    try {
+      await a.descartar(id);
+      n++;
+    } catch (err) {
+      console.error("[admin] no se pudo descartar", id, err);
+    }
+  }
+  // Se vuelve a la misma vista filtrada (solo valores simples)
+  const emisor = String(f.get("emisor") ?? "");
+  const ver = String(f.get("ver") ?? "");
+  const q = new URLSearchParams();
+  if (/^[a-z0-9-]+$/.test(emisor)) q.set("emisor", emisor);
+  if (/^[a-z]+$/.test(ver)) q.set("ver", ver);
+  q.set("descartados", String(n));
+  redirect(`/admin?${q}`);
+}
+
 export async function descartar(id: string) {
   await exigirAdmin();
   await almacen().descartar(id);

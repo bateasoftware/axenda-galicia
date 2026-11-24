@@ -27,18 +27,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Extraer carteles sin la API (con Claude Code)
 
-Si no hay `ANTHROPIC_API_KEY` (la API es de pago), la extracción la hace el agente cuando se lo piden ("extrae los carteles de data/entrada"):
+Si no hay `ANTHROPIC_API_KEY` (la API es de pago), la extracción la hace el agente cuando se lo piden (p. ej. «procesa estos carteles de WhatsApp» o «revisa las fuentes de hoy»). La guía completa está en `docs/procesar-envios.md`; resumen:
 
-1. Por cada imagen o PDF de `data/entrada/`, lee el archivo y aplica las reglas de `prompt()` en `src/lib/extraccion.ts`:
-   - un evento por acto en los programas;
-   - resumen propio;
-   - lo deducido en `inferido`;
-   - coordenadas de `data/lugares.json`.
-2. Escribe un pendiente por evento en `data/pendientes/<slug>.json`, con el formato de `EventoBase` en `src/lib/tipos.ts`:
-   - `fuente.canal`: `"whatsapp"` para fotos de WhatsApp, `"programa-pdf"` para PDF y `"manual"` para el resto;
-   - `fuente.recibido`: sale del nombre del archivo de WhatsApp o de la fecha de modificación.
-3. Si es una imagen:
-   - cópiala reducida a `data/pendientes/carteles/<slug>.jpg` con `npx tsx -e` y `normalizarCartel` de `src/lib/imagen.ts`;
-   - añade `"_cartel": "data/pendientes/carteles/<slug>.jpg"` al JSON.
-4. Mueve los originales a `data/entrada/procesadas/` y ejecuta `npm run validar`.
-5. Dile a Juan que ejecute `npm run subir-pendientes` (los sube a Turso) y los revise en `/admin`. Sin Turso, se revisan en local con `npm run dev`.
+1. Lee el cartel, el PDF o el enlace y aplica las reglas de `prompt()` en `src/lib/extraccion.ts`.
+2. Escribe un JSON mínimo (fuera del proyecto, en la carpeta temporal) y ejecuta `npm run anadir-pendiente -- evento.json --imagen cartel.jpg --canal whatsapp`. Valida, calcula slug y coordenadas, deduplica y guarda como pendiente en Turso.
+3. Nunca publicas: Juan revisa en `/admin`. No guardes datos de quien envía.
+4. Para cargar muchas imágenes sueltas con el formato antiguo (`data/entrada` → `data/pendientes`), queda `npm run subir-pendientes`.

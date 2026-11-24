@@ -6,7 +6,9 @@ import { exigirAdmin } from "@/lib/admin/sesion";
 import { capitalizar, fechaLarga, hora } from "@/lib/fechas";
 import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
 import { validarEvento } from "@/lib/validacion";
-import { salir } from "./acciones";
+import registroFuentes from "../../../data/fuentes.json";
+import { descartarVarios, salir } from "./acciones";
+import BarraLote from "./BarraLote";
 
 export default function Admin({ searchParams }: PageProps<"/admin">) {
   return (
@@ -31,19 +33,42 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
   if (!almacenDisponible())
     return (
       <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
-        Falta configurar la base de datos (Turso: <code>TURSO_DATABASE_URL</code>, <code>TURSO_AUTH_TOKEN</code> y <code>BLOB_READ_WRITE_TOKEN</code>): en Vercel no hay otro sitio donde guardar los
+        Falta configurar la base de datos (Turso: <code>TURSO_DATABASE_URL</code>, y <code>TURSO_AUTH_TOKEN</code>): en Vercel no hay otro sitio donde guardar los
         pendientes. Ver <code>docs/pendientes-juan.md</code>.
       </p>
     );
   const a = almacen();
-  const { descartado } = await searchParams;
+  const q = await searchParams;
+  const un = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
+  const [descartado, descartados, emisor, ver] = [un(q.descartado), un(q.descartados), un(q.emisor), un(q.ver)];
   // Los más próximos primero: son los que hay que publicar antes
-  const pendientes = (await a.pendientes()).sort((x, y) => (x.evento.sesiones[0]?.inicio ?? "9").localeCompare(y.evento.sesiones[0]?.inicio ?? "9"));
+  const todos = (await a.pendientes()).sort((x, y) => (x.evento.sesiones[0]?.inicio ?? "9").localeCompare(y.evento.sesiones[0]?.inicio ?? "9"));
+
+  // Emisores: la fuente automática (cultura-gal, vigo-agenda-cultural…) o, si no la hay, el canal (WhatsApp, formulario…)
+  const emisorDe = (p: Pendiente) => p.evento.fuente.id_fuente ?? p.evento.fuente.canal;
+  const cuentas = new Map<string, number>();
+  for (const p of todos) cuentas.set(emisorDe(p), (cuentas.get(emisorDe(p)) ?? 0) + 1);
+  const nombres = new Map(registroFuentes.fuentes.map((f) => [f.id, f.nombre]));
+  const esDuplicado = (p: Pendiente) => p.duplicados.length > 0;
+  const esPorCompletar = (p: Pendiente) => !!p.evento.inferido?.includes(MARCA_POR_COMPLETAR);
+
+  const pendientes = todos
+    .filter((p) => (emisor ? emisorDe(p) === emisor : true))
+    .filter((p) => (ver === "duplicados" ? esDuplicado(p) : ver === "completar" ? esPorCompletar(p) : true));
+  const enlace = (params: Record<string, string | undefined>) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]);
+    return qs.size ? `/admin?${qs}` : "/admin";
+  };
+  const chip = (activo: boolean) =>
+    `rounded-full border px-3 py-1 text-sm whitespace-nowrap ${activo ? "border-[var(--tinta)] bg-[var(--arena)] font-medium" : "border-[var(--linea)] bg-white hover:border-[var(--tinta)]"}`;
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-3xl">Pendientes ({pendientes.length})</h1>
+        <h1 className="font-display text-3xl">
+          Pendientes ({pendientes.length}
+          {pendientes.length !== todos.length ? ` de ${todos.length}` : ""})
+        </h1>
         <div className="flex gap-2 text-sm">
           <Link href="/admin/publicados" className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 hover:border-[var(--tinta)]">
             Publicados
@@ -58,12 +83,59 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
       </div>
       <p className="mt-1 text-sm text-[var(--gris)]">Almacén: {NOMBRE_ALMACEN[a.tipo]}</p>
       {descartado && <p className="mt-4 rounded-xl bg-[var(--arena)] p-3 text-sm">Descartado.</p>}
-      {!pendientes.length && <p className="mt-10 text-center text-[var(--gris)]">No hay nada pendiente. 🎉</p>}
-      <ul className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-3">
-        {pendientes.map((p) => (
-          <Tarjeta key={p.id} p={p} />
-        ))}
-      </ul>
+      {descartados && <p className="mt-4 rounded-xl bg-[var(--arena)] p-3 text-sm">Descartados {descartados} pendientes.</p>}
+
+      {todos.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sin-barra" aria-label="Filtrar por emisor">
+            <Link href={enlace({ ver })} className={chip(!emisor)}>
+              Todos ({todos.length})
+            </Link>
+            {[...cuentas.entries()]
+              .sort((x, y) => y[1] - x[1])
+              .map(([clave, n]) => (
+                <Link key={clave} href={enlace({ emisor: clave, ver })} title={nombres.get(clave)} className={chip(emisor === clave)}>
+                  {nombres.get(clave) ? clave : (NOMBRE_CANAL[clave] ?? clave)} ({n})
+                </Link>
+              ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href={enlace({ emisor, ver: ver === "duplicados" ? undefined : "duplicados" })} className={chip(ver === "duplicados")}>
+              ⚠ Posibles duplicados ({todos.filter(esDuplicado).length})
+            </Link>
+            <Link href={enlace({ emisor, ver: ver === "completar" ? undefined : "completar" })} className={chip(ver === "completar")}>
+              ✍️ Por completar ({todos.filter(esPorCompletar).length})
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {!pendientes.length && (
+        <p className="mt-10 text-center text-[var(--gris)]">
+          {todos.length ? (
+            <>
+              No hay pendientes con este filtro.{" "}
+              <Link href="/admin" className="underline">
+                Ver todos
+              </Link>
+            </>
+          ) : (
+            "No hay nada pendiente. 🎉"
+          )}
+        </p>
+      )}
+      {pendientes.length > 0 && (
+        <form id="lote" action={descartarVarios}>
+          <input type="hidden" name="emisor" value={emisor ?? ""} />
+          <input type="hidden" name="ver" value={ver ?? ""} />
+          <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-3">
+            {pendientes.map((p) => (
+              <Tarjeta key={p.id} p={p} />
+            ))}
+          </ul>
+          <BarraLote visibles={pendientes.length} />
+        </form>
+      )}
     </>
   );
 }
@@ -79,8 +151,11 @@ function Tarjeta({ p }: { p: Pendiente }) {
     !v.ok && `${v.errores.length} ${v.errores.length === 1 ? "error" : "errores"} para publicar`,
   ].filter(Boolean) as string[];
   return (
-    <li>
-      <Link href={`/admin/${p.id}`} className="flex gap-3 rounded-2xl border border-[var(--linea)] bg-white p-3 hover:shadow-md">
+    <li className="flex items-stretch gap-2">
+      <label className="flex shrink-0 cursor-pointer items-center px-1" aria-label={`Seleccionar «${e.titulo || "sin título"}»`}>
+        <input type="checkbox" name="ids" value={p.id} className="h-5 w-5 accent-[var(--tinta)]" />
+      </label>
+      <Link href={`/admin/${p.id}`} className="flex min-w-0 flex-1 gap-3 rounded-2xl border border-[var(--linea)] bg-white p-3 hover:shadow-md">
         <div className="relative h-24 w-18 shrink-0 overflow-hidden rounded-lg bg-[var(--arena)]">
           {p.cartel ? (
             <Image src={p.cartel} alt="" fill sizes="72px" unoptimized className="object-cover" />
