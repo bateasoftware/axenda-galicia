@@ -44,9 +44,14 @@ La fecha de recepción se saca del nombre del archivo de WhatsApp (`…PHOTO-202
 
 ```bash
 npm install
-npm run dev     # http://localhost:3000
+npm run dev       # http://localhost:3000
+npm run validar   # datos de data/
+npm test          # tests de fechas, .ics y validación (node:test)
+npm run lint
 npm run build
 ```
+
+Cada push a `main` y cada pull request pasan por la GitHub Action de `.github/workflows/ci.yml` (validar, tests, lint y build). Si falla, no te fíes del despliegue de Vercel: corrige antes.
 
 ## Próximos pasos
 
