@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { almacen, slugLibre, type Almacen } from "@/lib/almacen";
 import { formularioAEvento } from "@/lib/admin/formulario";
+import { COOKIE_LOTE, prepararPublicacion, type Omitido, type ResultadoLote } from "@/lib/admin/lote";
 import { COOKIE_PUBLICADO, type ResultadoPublicacion } from "@/lib/admin/publicacion";
 import { abrirSesion, cerrarSesion, claveCorrecta, exigirAdmin } from "@/lib/admin/sesion";
 import { ETIQUETA_EVENTOS, eventosDelRepositorio, todosLosEventos } from "@/lib/eventos";
@@ -100,6 +101,60 @@ export async function revisar(id: string, _previo: EstadoRevision, f: FormData):
   const resultado: ResultadoPublicacion = { slug: r.slug, url, mensaje, aviso, avisos: v.avisos.filter((x) => !x.startsWith("deducido")) };
   (await cookies()).set(COOKIE_PUBLICADO, JSON.stringify(resultado), { httpOnly: true, sameSite: "strict", path: "/admin", maxAge: 600, secure: process.env.NODE_ENV === "production" });
   redirect(`/admin/publicado/${r.slug}`);
+}
+
+/** Publica a la vez los pendientes marcados. Se dejan los que necesitan mirarse uno a uno (duplicados, email de aviso, errores). */
+export async function publicarVarios(f: FormData) {
+  await exigirAdmin();
+  const a = almacen();
+  const ids = [...new Set(f.getAll("ids").map(String))].slice(0, 100);
+  const ocupados = new Set((await todosLosEventos()).map((e) => e.slug));
+  const omitidos: Omitido[] = [];
+  const avisar: ResultadoLote["avisar"] = [];
+  const cfg = configWhatsApp();
+  let publicados = 0;
+
+  for (const id of ids) {
+    const p = await a.pendiente(id);
+    if (!p) continue;
+    const titulo = p.evento.titulo || id;
+    const r = prepararPublicacion(p, (s) => ocupados.has(s), slugLibre);
+    if (!r.ok) {
+      omitidos.push({ titulo, motivo: r.motivo });
+      continue;
+    }
+    try {
+      const pub = await a.publicar(id, r.evento);
+      ocupados.add(pub.slug);
+      publicados++;
+      if (pub.contacto?.canal === "whatsapp") {
+        const url = `${SITIO.url}/evento/${pub.slug}`;
+        try {
+          if (!cfg) throw new Error("WhatsApp sin configurar");
+          await clienteWhatsApp(cfg).avisarPublicado(pub.contacto.valor, url, r.evento.titulo);
+        } catch (err) {
+          console.error("[admin] aviso por WhatsApp:", err);
+          avisar.push({ titulo: r.evento.titulo, numero: pub.contacto.valor, url });
+        }
+      }
+      // El contacto solo servía para el aviso: se borra
+      if (pub.contacto) await a.olvidarContacto(a.tipo === "local" ? pub.slug : id);
+    } catch (err) {
+      console.error("[admin] no se pudo publicar", id, err);
+      omitidos.push({ titulo, motivo: "ha fallado al guardarlo: inténtalo desde su ficha" });
+    }
+  }
+  if (publicados) updateTag(ETIQUETA_EVENTOS);
+
+  const resultado: ResultadoLote = { publicados, omitidos, avisar };
+  (await cookies()).set(COOKIE_LOTE, JSON.stringify(resultado), { httpOnly: true, sameSite: "strict", path: "/admin", maxAge: 600, secure: process.env.NODE_ENV === "production" });
+  const emisor = String(f.get("emisor") ?? "");
+  const ver = String(f.get("ver") ?? "");
+  const q = new URLSearchParams();
+  if (/^[a-z0-9-]+$/.test(emisor)) q.set("emisor", emisor);
+  if (/^[a-z]+$/.test(ver)) q.set("ver", ver);
+  q.set("lote", "1");
+  redirect(`/admin?${q}`);
 }
 
 /** Descarta a la vez los pendientes marcados en la lista. Los descartados no vuelven a entrar al importar. */

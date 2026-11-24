@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { almacen, almacenDisponible, NOMBRE_ALMACEN, type Pendiente } from "@/lib/almacen";
+import { COOKIE_LOTE, type ResultadoLote } from "@/lib/admin/lote";
 import { exigirAdmin } from "@/lib/admin/sesion";
 import { capitalizar, fechaLarga, hora } from "@/lib/fechas";
 import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
@@ -41,6 +43,15 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
   const q = await searchParams;
   const un = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
   const [descartado, descartados, emisor, ver] = [un(q.descartado), un(q.descartados), un(q.emisor), un(q.ver)];
+  // Resultado de «Publicar» por lotes: se guarda 10 minutos en una cookie y se enseña con ?lote=1
+  let lote: ResultadoLote | null = null;
+  if (un(q.lote)) {
+    try {
+      lote = JSON.parse((await cookies()).get(COOKIE_LOTE)?.value ?? "null");
+    } catch {
+      lote = null;
+    }
+  }
   // Los más próximos primero: son los que hay que publicar antes
   const todos = (await a.pendientes()).sort((x, y) => (x.evento.sesiones[0]?.inicio ?? "9").localeCompare(y.evento.sesiones[0]?.inicio ?? "9"));
 
@@ -84,6 +95,37 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
       <p className="mt-1 text-sm text-[var(--gris)]">Almacén: {NOMBRE_ALMACEN[a.tipo]}</p>
       {descartado && <p className="mt-4 rounded-xl bg-[var(--arena)] p-3 text-sm">Descartado.</p>}
       {descartados && <p className="mt-4 rounded-xl bg-[var(--arena)] p-3 text-sm">Descartados {descartados} pendientes.</p>}
+      {lote && (
+        <div role="status" className="mt-4 space-y-2 rounded-xl border border-[var(--linea)] bg-white p-3 text-sm">
+          <p className="font-medium">
+            {lote.publicados > 0 ? `✓ Publicados ${lote.publicados} ${lote.publicados === 1 ? "evento" : "eventos"}. La web se actualiza en unos segundos.` : "No se ha publicado ninguno."}
+          </p>
+          {lote.omitidos.length > 0 && (
+            <div className="text-amber-900">
+              <p className="font-medium">Se han dejado en pendientes ({lote.omitidos.length}):</p>
+              <ul className="mt-1 list-inside list-disc">
+                {lote.omitidos.map((o, i) => (
+                  <li key={i}>
+                    {o.titulo}: {o.motivo}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {lote.avisar.length > 0 && (
+            <div className="text-red-900">
+              <p className="font-medium">Avisa a mano por WhatsApp (no se ha podido enviar; el número no se guarda):</p>
+              <ul className="mt-1 list-inside list-disc">
+                {lote.avisar.map((x, i) => (
+                  <li key={i}>
+                    +{x.numero}: «{x.titulo}» {x.url}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       {todos.length > 0 && (
         <div className="mt-4 space-y-2">

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { publicarVarios } from "./acciones";
 
-/** Barra fija para elegir pendientes de la lista y descartarlos de una vez. Va dentro del <form id="lote">. */
+/** Barra fija para elegir pendientes de la lista y publicarlos o descartarlos de una vez. Va dentro del <form id="lote">. */
 export default function BarraLote({ visibles }: { visibles: number }) {
   const [marcados, setMarcados] = useState(0);
 
@@ -31,11 +32,26 @@ export default function BarraLote({ visibles }: { visibles: number }) {
         </button>
       )}
       <button
+        formAction={publicarVarios}
+        disabled={marcados === 0}
+        onClick={(e) => {
+          if (
+            !confirm(
+              `¿Publicar ${marcados} ${marcados === 1 ? "pendiente" : "pendientes"} tal como están? Se publican sin revisarlos uno a uno. Los que tengan posible duplicado, error o un email de aviso se dejan en pendientes.`,
+            )
+          )
+            e.preventDefault();
+        }}
+        className="ml-auto rounded-full bg-[var(--mar)] px-4 py-1.5 text-sm font-medium text-white enabled:hover:opacity-90 disabled:opacity-40"
+      >
+        Publicar{marcados > 0 ? ` (${marcados})` : ""}
+      </button>
+      <button
         disabled={marcados === 0}
         onClick={(e) => {
           if (!confirm(`¿Descartar ${marcados} ${marcados === 1 ? "pendiente" : "pendientes"}? No vuelven a entrar al importar.`)) e.preventDefault();
         }}
-        className="ml-auto rounded-full border border-red-300 px-4 py-1.5 text-sm font-medium text-red-700 enabled:hover:bg-red-50 disabled:opacity-40"
+        className="rounded-full border border-red-300 px-4 py-1.5 text-sm font-medium text-red-700 enabled:hover:bg-red-50 disabled:opacity-40"
       >
         Descartar{marcados > 0 ? ` (${marcados})` : ""}
       </button>

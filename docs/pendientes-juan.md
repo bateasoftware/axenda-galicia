@@ -34,6 +34,7 @@ Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner cl
   - **Dónde:** escribe el nombre del sitio. Si es uno conocido, se pone su ubicación; si no, se usa el centro del concello (aproximada). Las coordenadas son opcionales, dentro de «Coordenadas».
   - **Cartel:** si no tiene, «Añadir un cartel» sube una imagen (se reduce sola). Si ya tiene, «Cambiar el cartel».
   - **Filtrar por emisor:** debajo del título hay un botón por cada origen (`vigo-agenda-cultural`, `cultura-gal`, WhatsApp, formulario…) con su número de pendientes, y filtros para «Posibles duplicados» y «Por completar».
+  - **Publicar por lotes:** con los mismos marcados, «Publicar (N)» los publica de una vez, tal como están. Se dejan en pendientes (y te dice por qué) los que tienen **posible duplicado**, **errores** para publicar (fecha, lugar, categorías…) o un **email de aviso** (esos se publican desde su ficha, para enviarle el mensaje). Los que llegaron por WhatsApp se avisan solos.
   - **Descartar por lotes:** cada pendiente tiene una casilla. Marca los que quieras, o pulsa «Seleccionar los N» para marcar todos los de la vista filtrada, y «Descartar». Lo descartado no vuelve a entrar al importar.
 - **Publicados** (botón arriba, `/admin/publicados`): todos los eventos que se ven en la web, próximos y pasados. Entra en uno para **editarlo** (título, fechas, lugar, cartel…) o **retirarlo** de la web.
   - La dirección de la página (`/evento/…`) no cambia al editar.
