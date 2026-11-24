@@ -12,23 +12,38 @@ Agenda de eventos de Val Miñor y Vigo (y, más adelante, de toda Galicia). Es u
 - **Datos (fase 1)**: un JSON por evento en `data/eventos/`, con git como CMS. Cada push a `main` despliega.
 - **Datos (fase 2)**: Supabase + PostGIS. El esquema está en `supabase/esquema.sql`; basta con sustituir `src/lib/eventos.ts`.
 
-## Entrada automática (recomendada)
+## Cómo entran los eventos
 
-Los carteles que llegan por email (y, más adelante, por el formulario web y WhatsApp) pasan por `/api/entrada`: la IA extrae los datos y se abre un **pull request** con el evento. Revisas la vista previa desde el móvil y, si está bien, fusionas: Vercel lo publica. Puesta en marcha y detalles: [`docs/entrada-automatica.md`](docs/entrada-automatica.md).
+Todo entra como **pendiente** y una persona lo publica desde el panel `/admin`. Nada se publica solo.
 
-## Flujo manual para publicar eventos
+| Canal | Cómo | Dónde se configura |
+|---|---|---|
+| WhatsApp Business | El organizador reenvía el cartel; responde "Recibido" y le avisa al publicar | `/api/whatsapp`, `docs/pendientes-juan.md` (bloque 5) |
+| Formulario web | `/enviar`: cartel o PDF y datos opcionales | `/api/enviar` |
+| Email | Gmail + Apps Script → `/api/entrada` | `docs/entrada-automatica.md` |
+| Fuentes automáticas | Calendarios ICS, datos abiertos y boletines en PDF de `data/fuentes.json` | `npm run importar` (a diario con GitHub Actions) |
+| A mano | Carteles y programas en `data/entrada/` | `npm run extraer` |
+
+Un cartel da un evento y un programa (Navidad, fiestas, boletín) da uno por acto. Lo repetido se detecta: mismo archivo, mismo evento de la misma fuente, o mismo día, concello y título parecido. La estrategia de fuentes está en [`docs/fuentes.md`](docs/fuentes.md) y lo que falta configurar en [`docs/pendientes-juan.md`](docs/pendientes-juan.md).
+
+**Dónde se guardan:** con Supabase (`SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`; esquema en `supabase/esquema.sql`), pendientes, publicados y carteles van a Supabase. Sin él, en local se usan `data/pendientes/` y `data/eventos/`, con git como CMS. La web lee siempre los JSON de `data/eventos/` y, si está configurado, lo publicado en Supabase.
+
+## Flujo en local
 
 ```bash
-cp .env.example .env.local        # y pon tu ANTHROPIC_API_KEY
-# 1. Copia los carteles (tal cual vienen de WhatsApp) a data/entrada/
-npm run extraer                   # 2. La IA genera data/pendientes/<slug>.json (salta las imágenes ya extraídas)
-# 3. Revisa cada JSON: "inferido", "confianza" y las coordenadas ("aprox")
-npm run validar                   #    Comprueba eventos, pendientes y lugares.json
-npm run publicar                  # 4. Valida, pasa a data/eventos/ y copia el cartel a public/carteles/
-git add -A && git commit -m "Eventos" && git push   # 5. Vercel lo publica
+cp .env.example .env.local        # ANTHROPIC_API_KEY y ADMIN_CLAVE
+# Carteles o PDF en data/entrada/
+npm run extraer                   # → data/pendientes/ (un pendiente por evento)
+npm run importar                  # fuentes automáticas → data/pendientes/
+npm run dev                       # revisa y publica en http://localhost:3000/admin
+git add -A && git commit -m "Eventos" && git push   # Vercel lo publica
 ```
 
-`publicar` no mueve nada que no pase la validación (fechas, categorías, coordenadas dentro de Galicia, slug único…) y solo borra la imagen de `data/entrada/` cuando el evento ya está escrito. El modelo de datos y sus reglas están en `src/lib/tipos.ts`.
+Otros comandos:
+
+- `npm run publicar`: publica desde la terminal los pendientes válidos.
+- `npm run revisar-fuentes`: dice qué fuentes toca revisar a mano hoy.
+- `npm run duplicados`: lista los posibles duplicados.
 
 La fecha de recepción se saca del nombre del archivo de WhatsApp (`…PHOTO-2026-11-19-09-52-44.jpg`) para deducir el año cuando el cartel no lo dice.
 
@@ -41,7 +56,10 @@ La fecha de recepción se saca del nombre del archivo de WhatsApp (`…PHOTO-202
 | `/` | Agenda con filtros (próximos, este finde, concello, categoría) y vistas de lista, mapa y calendario. Los filtros van en la URL (`?vista=mapa&cuando=finde&concello=baiona&cat=infantil`) para poder compartirlos |
 | `/evento/[slug]` | Ficha con cartel, datos estructurados `schema.org/Event` (para el buscador de eventos de Google), botón de añadir al calendario (`/evento/[slug]/calendario.ics`) y cómo llegar |
 | `/concello/[concello]` | Página SEO "Qué hacer en X", con su propia imagen para compartir |
-| `/enviar` | Explicación para que los organizadores manden su cartel |
+| `/enviar` | Formulario para mandar un cartel o programa, WhatsApp y email |
+| `/organizador/[slug]` | Todos los eventos de un organizador |
+| `/widget` | Widget "Agenda de la zona" para insertar en otras webs (`/widget.js`, `/widget/agenda`) |
+| `/admin` | Panel de revisión (contraseña `ADMIN_CLAVE`): pendientes, publicar o descartar y `/admin/cobertura` |
 | `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest` | SEO y PWA instalable. El service worker guarda las páginas visitadas para verlas sin conexión y sirve desde caché los ficheros estáticos y los carteles |
 
 ## Desarrollo
@@ -59,8 +77,9 @@ Cada push a `main` y cada pull request pasan por la GitHub Action de `.github/wo
 
 ## Próximos pasos
 
+Lo que depende de configurar cuentas está en `docs/pendientes-juan.md`. Además:
+
 1. Dominio propio y `NEXT_PUBLIC_SITE_URL`.
-2. Formulario web y número de WhatsApp Business (Cloud API) → mismo endpoint `/api/entrada` → PR de revisión.
-3. Panel de revisión (aprobar o editar) y paso a Supabase.
-4. Newsletter "Plan de finde" y destacados de pago en autoservicio.
-5. Corregir las coordenadas en `data/lugares.json` y ampliarlo comarca a comarca.
+2. Política de privacidad y aviso legal (los pide Meta para WhatsApp).
+3. Newsletter "Plan de finde" y destacados de pago en autoservicio.
+4. Corregir las coordenadas en `data/lugares.json` y ampliarlo comarca a comarca.

@@ -25,8 +25,9 @@ export function claveCorrecta(intento: string): boolean {
 }
 
 export async function autorizado(): Promise<boolean> {
-  if (!claveConfigurada()) return false;
+  // Primero la cookie: así el panel es siempre dinámico, aunque ADMIN_CLAVE se añada después del build
   const valor = (await cookies()).get(COOKIE)?.value;
+  if (!claveConfigurada()) return false;
   return !!valor && iguales(valor, firma());
 }
 

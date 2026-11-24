@@ -1,8 +1,17 @@
 # Lo que te toca a ti (Juan)
 
+## Por dónde empezar (en este orden)
+
+1. **Supabase** (bloque 5 A). Sin él no funcionan en Vercel ni el panel, ni el formulario, ni WhatsApp. Son 15 minutos.
+2. **`ADMIN_CLAVE` y `ANTHROPIC_API_KEY` en Vercel** (bloques 3 y 6). Con esto ya tienes panel, formulario e importación.
+3. **Activar la importación diaria** (bloque 5 A, GitHub). Eventos de Cultura de Galicia y de Vigo cada mañana, sin hacer nada.
+4. **Privacidad y aviso legal** (bloque 5 C). Hace falta para WhatsApp en modo Live.
+5. **WhatsApp Business** (bloque 5 B). Es el canal que más eventos traerá, pero el más largo de montar (número, Meta, plantilla).
+6. **Contactar con concellos y asociaciones** (bloque 1) y **difundir el widget** (bloque 7).
+
 Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisiones. Cada punto dice **qué** hacer, **por qué**, **dónde** y **qué me tienes que devolver**. Las variables de entorno van en Vercel (Settings → Environment Variables) y en tu `.env.local` para probar en local. **No me pases claves por el chat.**
 
-Última actualización: bloque 7 (organizadores, formulario y widget).
+Última actualización: bloque 8 (cobertura). Todo el código de los 8 bloques está hecho; lo que queda en esta lista depende de ti.
 
 ## Bloque 1 · Fuentes
 
@@ -153,3 +162,10 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
   - **Por qué:** trae enlaces y visitas, y es la base de la cuota mensual de `docs/vision.md`.
   - **Devuélveme:** los primeros sitios que lo pongan, para seguirlos en la cobertura.
 - [ ] **Compartir la página de cada organizador** (`/organizador/<nombre>`) cuando publiques sus eventos. El panel ya te da el enlace al evento.
+
+## Bloque 8 · Cobertura (/admin/cobertura)
+
+- [ ] **Mirarla cada semana o cada dos.** Muestra eventos por canal, por fuente, por concello y por semana, y el % de lo publicado que llega por envío directo (el indicador de éxito de `docs/vision.md`).
+  - **Por qué:** para decidir dónde invertir tu tiempo. Por ejemplo, desactivar una fuente que solo trae ruido o insistir con los organizadores de un concello flojo.
+  - **Dónde:** `/admin/cobertura`.
+  - **Devuélveme:** si echas en falta algún dato (p. ej. visitas por evento), lo añado.
