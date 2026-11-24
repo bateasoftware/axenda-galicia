@@ -16,7 +16,8 @@
     "duplicados": "tsx --env-file-if-exists=.env.local scripts/duplicados.ts",
     "migrar-a-supabase": "tsx --env-file-if-exists=.env.local scripts/migrar-a-supabase.ts",
     "subir-pendientes": "tsx --env-file-if-exists=.env.local scripts/subir-pendientes.ts",
-    "anadir-pendiente": "tsx --env-file-if-exists=.env.local scripts/anadir-pendiente.ts"
+    "anadir-pendiente": "tsx --env-file-if-exists=.env.local scripts/anadir-pendiente.ts",
+    "logos": "tsx scripts/generar-logos.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.13.0",

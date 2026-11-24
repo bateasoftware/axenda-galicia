@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/fraunces";
@@ -23,9 +24,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col font-sans">
         <header className="sticky top-0 z-[1000] border-b border-[var(--linea)] bg-[var(--fondo)]/90 backdrop-blur">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--tinta)] text-sm font-bold text-white">A</span>
-              <span className="font-display text-xl">{SITIO.nombre}</span>
+            <Link href="/" aria-label={`${SITIO.nombre}: inicio`} className="flex items-center">
+              {/* Logo completo; en pantallas muy estrechas, solo el icono */}
+              <Image src="/marca/logo.png" alt={SITIO.nombre} width={1476} height={347} sizes="160px" className="hidden h-9 w-auto min-[420px]:block" />
+              <Image src="/marca/icono.png" alt={SITIO.nombre} width={380} height={347} sizes="40px" className="h-9 w-auto min-[420px]:hidden" />
             </Link>
             <nav className="flex items-center gap-1 text-sm">
               <Link href="/concellos" className="rounded-lg px-2 py-1.5 hover:bg-[var(--arena)] sm:px-3">Concellos</Link>

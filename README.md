@@ -2,7 +2,7 @@
 
 Agenda de eventos de Val Miñor y Vigo (y, más adelante, de toda Galicia). Es una PWA que convierte los carteles que la gente comparte por WhatsApp en eventos ordenados en **lista, mapa y calendario**, con páginas preparadas para SEO.
 
-> "Axenda" es un nombre provisional. Se cambia en `src/lib/sitio.ts`.
+> "Axenda" es un nombre provisional. Se cambia en `src/lib/sitio.ts`. El logo está en `marca/` y `npm run logos` genera sus variantes.
 
 ## Stack
 

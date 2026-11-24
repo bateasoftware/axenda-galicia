@@ -22,6 +22,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Fechas como hora local de Galicia sin zona (`YYYY-MM-DDTHH:MM`). Helpers en `src/lib/fechas.ts`.
 - Lo que dependa de "hoy" se calcula en el cliente (`hoyGalicia`), nunca en el render estático.
 - Fuentes autoalojadas con @fontsource (no usar next/font/google).
+- Marca: el original está en `marca/axenda-logo-original.webp`. `npm run logos` regenera el logo, el icono y los iconos de la app (favicon, iOS, PWA); no los edites a mano. En la cabecera va el logo completo y, donde solo cabe un icono, `public/marca/icono.png`.
 - Tests en `tests/` con `node:test` (`npm test`). Si tocas `src/lib/fechas.ts` o `src/lib/validacion.ts`, añade o ajusta sus tests.
 - Antes de terminar: `npm run validar && npm test && npm run lint && npm run build` (lo mismo que ejecuta la CI en GitHub).
 
