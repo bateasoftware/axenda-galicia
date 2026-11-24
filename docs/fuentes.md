@@ -60,6 +60,16 @@ Sirven para **enterarse** de que hay un evento. No se copia su texto ni sus imá
 
 **Nada de extracción automática de Instagram ni de Facebook**: va contra sus condiciones. Si un cartel interesa, se pide al organizador que lo mande o se carga a mano (`npm run extraer`) con resumen propio y su permiso. Ver "Derechos sobre los carteles" en `docs/vision.md`.
 
+## Duplicados
+
+El mismo evento suele llegar por varias vías: el cartel del organizador, la web del concello, Cultura de Galicia… Al llegar, cada evento se compara con los pendientes y los publicados (mismo día, mismo concello y título parecido; `src/lib/duplicados.ts`):
+
+- **Casi idéntico** (parecido ≥ 85 %) y viene de un importador automático: no se crea otro.
+- **Parecido** (≥ 50 %): se crea, pero marcado como **posible duplicado**. En `/admin` se ve con qué choca y se descarta o se publica.
+- Lo que manda una persona (WhatsApp, formulario, email) nunca se descarta solo: puede traer mejor información o el cartel.
+
+`npm run duplicados` repasa los pendientes que ya había y `-- --marcar` los marca.
+
 ## Qué no hacer
 
 - No hacer scraping de Instagram, Facebook ni de webs cuyo `robots.txt` lo prohíba (p. ej. `turismo.gal/axenda-cultural/`).

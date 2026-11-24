@@ -212,6 +212,15 @@ export function almacenLocal(raiz = process.cwd()): Almacen {
       borrarPendiente(id, { conCartel: true });
     },
 
+    async marcarDuplicados(id, duplicados) {
+      const p = leer(id);
+      if (!p) return;
+      const internos = internosDe(id);
+      if (duplicados.length) internos._duplicados = duplicados;
+      else delete internos._duplicados;
+      escribir(id, p.evento, internos);
+    },
+
     async olvidarContacto(idOSlug) {
       fs.rmSync(path.join(PRIVADO, `${idOSlug}.json`), { force: true });
       fs.rmSync(path.join(PRIVADO, `publicado-${idOSlug}.json`), { force: true });

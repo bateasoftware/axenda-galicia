@@ -6,6 +6,7 @@ import { procesarEntrada, procesarEntradaGitHub, type Entrada, type ResultadoEnt
 import { extraer } from "./extraccion";
 import { clienteGitHub } from "./github";
 import { normalizarCartel } from "./imagen";
+import { buscadorDuplicados } from "./duplicados";
 
 export class ArchivoNoValido extends Error {}
 
@@ -39,7 +40,10 @@ export function destinoConfigurado(env: Record<string, string | undefined> = pro
 export async function recibir(entrada: Entrada, env: Record<string, string | undefined> = process.env): Promise<ResultadoEntrada> {
   const extraerConIA = (e: Parameters<typeof extraer>[0]) => extraer(e);
   const destino = destinoConfigurado(env);
-  if (destino === "almacen") return procesarEntrada(entrada, { almacen: almacen(env), extraer: extraerConIA });
+  if (destino === "almacen") {
+    const a = almacen(env);
+    return procesarEntrada(entrada, { almacen: a, extraer: extraerConIA, duplicados: await buscadorDuplicados(a) });
+  }
   if (destino === "github")
     // En un PR no se pueden guardar datos de contacto (el repositorio puede ser público): se descartan
     return procesarEntradaGitHub(

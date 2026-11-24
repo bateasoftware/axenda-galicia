@@ -154,6 +154,10 @@ export function almacenSupabase({ url, clave }: { url: string; clave: string }):
       await rest(`contactos?evento_id=${eq(id)}`, { method: "DELETE" });
     },
 
+    async marcarDuplicados(id, duplicados) {
+      await rest(`eventos?id=${eq(id)}`, { method: "PATCH", body: JSON.stringify({ duplicados }) });
+    },
+
     async olvidarContacto(id) {
       await rest(`contactos?evento_id=${eq(id)}`, { method: "DELETE" });
     },

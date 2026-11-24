@@ -1,5 +1,6 @@
 // Ejecuta un importador y guarda los candidatos nuevos como pendientes.
 import type { Almacen } from "../almacen";
+import { UMBRAL_SEGURO, type Detector } from "../duplicados";
 import type { Fuente } from "../fuentes";
 import type { EventoBorrador } from "../tipos";
 import { IMPORTADORES, type Candidato } from "./importadores";
@@ -8,19 +9,18 @@ export type ResultadoImportacion = {
   creados: { evento: EventoBorrador; duplicados: string[] }[];
   yaVistos: number;
   pasados: number;
+  /** Ya los teníamos por otra vía (mismo día, concello y título casi igual): no se crean */
+  repetidos?: number;
   nota?: string;
 };
 
 /** Importadores que necesitan algo más que descargar (p. ej. IA); se registran desde fuera */
 export const IMPORTADORES_EXTRA: Partial<Record<NonNullable<Fuente["importador"]>, (f: Fuente, a: Almacen, o: { simular: boolean; hoy: string }) => Promise<ResultadoImportacion>>> = {};
 
-/** Busca posibles duplicados (se sustituye en el bloque de deduplicación) */
-export type BuscadorDuplicados = (e: EventoBorrador) => string[];
-
 export async function importarFuente(
   fuente: Fuente,
   destino: Almacen,
-  { simular = false, hoy, duplicados = () => [] }: { simular?: boolean; hoy: string; duplicados?: BuscadorDuplicados },
+  { simular = false, hoy, detector }: { simular?: boolean; hoy: string; detector?: Detector },
 ): Promise<ResultadoImportacion> {
   const extra = fuente.importador && IMPORTADORES_EXTRA[fuente.importador];
   if (extra) return extra(fuente, destino, { simular, hoy });
@@ -29,7 +29,7 @@ export async function importarFuente(
   if (!fuente.url_datos) throw new Error(`La fuente ${fuente.id} no tiene url_datos`);
 
   const candidatos: Candidato[] = await importar(fuente);
-  const r: ResultadoImportacion = { creados: [], yaVistos: 0, pasados: 0 };
+  const r: ResultadoImportacion = { creados: [], yaVistos: 0, pasados: 0, repetidos: 0 };
   const vistos = new Set<string>();
 
   for (const c of candidatos) {
@@ -45,8 +45,15 @@ export async function importarFuente(
       continue;
     }
     vistos.add(c.uid);
-    const dups = duplicados(c.evento);
-    if (!simular) await destino.crear({ evento: c.evento, duplicados: dups });
+    const parecidos = detector?.buscar(c.evento) ?? [];
+    // Casi seguro que ya lo tenemos (p. ej. lo mandó el organizador): no se crea otro
+    if (parecidos[0] && parecidos[0].parecido >= UMBRAL_SEGURO) {
+      r.repetidos!++;
+      continue;
+    }
+    const dups = parecidos.map((x) => x.ref);
+    const ref = simular ? `nuevo:${c.uid}` : `pendiente:${(await destino.crear({ evento: c.evento, duplicados: dups })).id}`;
+    detector?.anotar(ref, c.evento);
     r.creados.push({ evento: c.evento, duplicados: dups });
   }
   return r;

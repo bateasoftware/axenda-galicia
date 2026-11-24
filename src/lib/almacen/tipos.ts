@@ -59,6 +59,8 @@ export interface Almacen {
   /** Publica: el evento ya está validado. Devuelve el slug definitivo y el contacto para avisar. */
   publicar(id: string, evento: Evento): Promise<{ slug: string; contacto?: Contacto }>;
   descartar(id: string): Promise<void>;
+  /** Sustituye la lista de posibles duplicados de un pendiente */
+  marcarDuplicados(id: string, duplicados: string[]): Promise<void>;
   /** Marca que ya se avisó al remitente (y borra su contacto) */
   olvidarContacto(id: string): Promise<void>;
   cobertura(): Promise<RegistroCobertura[]>;

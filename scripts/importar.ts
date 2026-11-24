@@ -10,6 +10,7 @@
  * y marca los posibles duplicados para revisarlos.
  */
 import { almacen } from "../src/lib/almacen";
+import { detectorDuplicados } from "../src/lib/duplicados";
 import { fechaHoraGalicia } from "../src/lib/fechas";
 import { guardarFuentes, leerFuentes } from "../src/lib/fuentes";
 import { importarFuente } from "../src/lib/importar/ejecutar";
@@ -28,13 +29,15 @@ async function main() {
   const destino = almacen();
   console.log(`Destino: ${destino.tipo === "supabase" ? "Supabase" : "data/pendientes/"}${simular ? " (simulación: no se guarda nada)" : ""}\n`);
 
+  // Un solo detector para toda la importación: también compara entre fuentes
+  const detector = await detectorDuplicados(destino);
   let total = 0;
   for (const f of elegidas) {
     process.stdout.write(`→ ${f.nombre} [${f.id}] … `);
     try {
-      const r = await importarFuente(f, destino, { simular, hoy });
+      const r = await importarFuente(f, destino, { simular, hoy, detector });
       total += r.creados.length;
-      console.log(`${r.creados.length} nuevos, ${r.yaVistos} ya vistos, ${r.pasados} pasados${r.nota ? ` · ${r.nota}` : ""}`);
+      console.log(`${r.creados.length} nuevos, ${r.yaVistos} ya vistos, ${r.repetidos ?? 0} repetidos, ${r.pasados} pasados${r.nota ? ` · ${r.nota}` : ""}`);
       for (const c of r.creados) console.log(`    + ${c.evento.sesiones[0]?.inicio.slice(0, 10)} ${c.evento.concello}: ${c.evento.titulo}${c.duplicados.length ? `  ⚠ posible duplicado de ${c.duplicados.join(", ")}` : ""}`);
       if (!simular) fuentes = fuentes.map((x) => (x.id === f.id ? { ...x, ultima_revision: hoy } : x));
     } catch (err) {

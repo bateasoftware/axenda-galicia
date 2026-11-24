@@ -2,7 +2,7 @@
 
 Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisiones. Cada punto dice **qué** hacer, **por qué**, **dónde** y **qué me tienes que devolver**. Las variables de entorno van en Vercel (Settings → Environment Variables) y en tu `.env.local` para probar en local. **No me pases claves por el chat.**
 
-Última actualización: bloque 3 (programas en PDF).
+Última actualización: bloque 4 (duplicados).
 
 ## Bloque 1 · Fuentes
 
@@ -47,3 +47,10 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
 - [ ] **Probar con un programa real**: copia un PDF (p. ej. el programa de Nadal de un concello) en `data/entrada/` y ejecuta `npm run extraer`.
   - **Por qué:** no lo he probado contra la IA real para no gastar llamadas sin tu permiso. Los tests usan una IA simulada.
   - **Devuélveme:** si separa bien los actos o junta o parte de más. Con eso ajusto el prompt de `src/lib/extraccion.ts`.
+
+## Bloque 4 · Duplicados
+
+- [ ] **Validar los umbrales** con casos reales cuando lleguen los primeros duplicados. Hoy: 85 % para no crear otro, 50 % para marcarlo.
+  - **Por qué:** con pocos datos he puesto valores prudentes. Mejor marcar de más que perder un evento.
+  - **Dónde:** `npm run duplicados` y las marcas "posible duplicado" en `/admin`.
+  - **Devuélveme:** ejemplos de falsos positivos o de duplicados que se cuelen, y ajusto `src/lib/duplicados.ts`.
