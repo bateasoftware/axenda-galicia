@@ -34,7 +34,8 @@ export function supabaseConfigurado(env: Record<string, string | undefined> = pr
 
 export function almacenSupabase({ url, clave }: { url: string; clave: string }): Almacen {
   const base = url.replace(/\/$/, "");
-  const urlPublica = (ruta: string) => `${base}/storage/v1/object/public/${BUCKET}/${ruta}`;
+  // cartel_path es una ruta del bucket o, en lo migrado desde Turso, la URL completa de Vercel Blob
+  const urlPublica = (ruta: string) => (ruta.startsWith("https://") ? ruta : `${base}/storage/v1/object/public/${BUCKET}/${ruta}`);
   // Claves antiguas (JWT "service_role") van también como Bearer; las nuevas (sb_secret_…) solo como apikey
   const claves: Record<string, string> = { apikey: clave, ...(clave.startsWith("eyJ") ? { Authorization: `Bearer ${clave}` } : {}) };
 
@@ -175,4 +176,58 @@ export function almacenSupabase({ url, clave }: { url: string; clave: string }):
       }));
     },
   };
+}
+
+/** Fila tal como la exporta otro almacén (Turso), para migrar */
+export type FilaMigracion = {
+  id: string;
+  slug: string;
+  estado: "pendiente" | "publicado" | "descartado";
+  datos: string;
+  hash: string | null;
+  cartel_url: string | null;
+  duplicados: string;
+  creado: string;
+  actualizado: string;
+  publicado: string | null;
+};
+
+/**
+ * Copia eventos y contactos a Supabase conservando ids, estados y fechas. Se puede repetir: actualiza lo que ya está.
+ * Los carteles se quedan en Vercel Blob (su URL completa va en cartel_path).
+ */
+export async function importarEnSupabase(
+  { url, clave }: { url: string; clave: string },
+  eventos: FilaMigracion[],
+  contactos: { evento_id: string; canal: "whatsapp" | "email"; valor: string; creado: string }[],
+) {
+  const base = url.replace(/\/$/, "");
+  const cabeceras: Record<string, string> = {
+    apikey: clave,
+    ...(clave.startsWith("eyJ") ? { Authorization: `Bearer ${clave}` } : {}),
+    "Content-Type": "application/json",
+    Prefer: "resolution=merge-duplicates,return=minimal",
+  };
+  const enviar = async (tabla: string, filas: unknown[]) => {
+    for (let i = 0; i < filas.length; i += 200) {
+      const res = await fetch(`${base}/rest/v1/${tabla}`, { method: "POST", headers: cabeceras, body: JSON.stringify(filas.slice(i, i + 200)) });
+      if (!res.ok) throw new ErrorSupabase(res.status, (await res.text()).slice(0, 300));
+    }
+  };
+  await enviar(
+    "eventos",
+    eventos.map((e) => ({
+      id: e.id,
+      slug: e.slug,
+      estado: e.estado,
+      datos: JSON.parse(e.datos),
+      hash: e.hash,
+      cartel_path: e.cartel_url,
+      duplicados: JSON.parse(e.duplicados || "[]"),
+      creado: e.creado,
+      actualizado: e.actualizado,
+      publicado: e.publicado,
+    })),
+  );
+  await enviar("contactos", contactos);
 }

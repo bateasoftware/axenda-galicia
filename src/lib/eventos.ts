@@ -5,14 +5,14 @@ import type { Evento } from "./tipos";
 import { primerInicio } from "./fechas";
 import { formatearProblemas, leerEventos } from "./validacion";
 import { slugConcello } from "./slug";
-import { almacenSupabase, supabaseConfigurado } from "./almacen";
+import { almacenRemoto } from "./almacen";
 
 export { slugConcello };
 
 // Los eventos publicados salen de dos sitios:
 //  - data/eventos/*.json (git como CMS; lo publicado con npm run publicar o el panel en local)
-//  - Supabase, si están SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY (lo publicado desde /admin en Vercel)
-// Si un slug está en los dos, gana Supabase. Las vistas solo usan estas funciones.
+//  - el almacén en la nube (Turso o Supabase), lo publicado desde /admin en Vercel
+// Si un slug está en los dos, gana la nube. Las vistas solo usan estas funciones.
 
 /** Etiqueta de caché: al publicar desde el panel se invalida y las páginas se regeneran */
 export const ETIQUETA_EVENTOS = "eventos";
@@ -29,13 +29,14 @@ function eventosEnFicheros(): Evento[] {
   return eventos;
 }
 
-async function eventosEnSupabase(): Promise<Evento[]> {
-  if (!supabaseConfigurado()) return [];
+async function eventosEnLaNube(): Promise<Evento[]> {
+  const remoto = almacenRemoto();
+  if (!remoto) return [];
   try {
-    return await almacenSupabase({ url: process.env.SUPABASE_URL!, clave: process.env.SUPABASE_SERVICE_ROLE_KEY! }).publicados();
+    return await remoto.publicados();
   } catch (err) {
-    // Si Supabase falla, la web sigue con los JSON
-    console.error("[eventos] no se pudo leer Supabase:", (err as Error).message);
+    // Si la base de datos falla, la web sigue con los JSON
+    console.error(`[eventos] no se pudo leer ${remoto.tipo}:`, (err as Error).message);
     return [];
   }
 }
@@ -49,7 +50,7 @@ export async function todosLosEventos(): Promise<Evento[]> {
   else cacheLife("hours");
   const porSlug = new Map<string, Evento>();
   for (const e of eventosEnFicheros()) porSlug.set(e.slug, e);
-  for (const e of await eventosEnSupabase()) porSlug.set(e.slug, e);
+  for (const e of await eventosEnLaNube()) porSlug.set(e.slug, e);
   return [...porSlug.values()].sort((a, b) => primerInicio(a).localeCompare(primerInicio(b)));
 }
 

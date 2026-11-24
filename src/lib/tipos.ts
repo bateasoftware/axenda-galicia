@@ -84,7 +84,7 @@ export const EventoBase = z.object({
   precio: z.string().optional(),
   inscripcion: InscripcionBase.optional(),
   extras: z.array(z.string()).optional(),
-  /** Ruta pública del cartel, p. ej. "/carteles/xxx.jpg", o URL de Supabase Storage */
+  /** Ruta pública del cartel, p. ej. "/carteles/xxx.jpg", o URL de Vercel Blob o Supabase Storage */
   cartel: z.string().optional(),
   idioma: z.enum(["gl", "es", "mixto"]),
   fuente: FuenteEventoBase,
@@ -133,7 +133,10 @@ export const EventoSchema = z.strictObject({
   inscripcion: InscripcionSchema.optional(),
   cartel: z
     .string()
-    .regex(/^(\/carteles\/[^/]+|https:\/\/[^/]+\/storage\/v1\/object\/public\/carteles\/[^/]+)\.(jpe?g|png|webp)$/, "debe ser /carteles/<fichero> o una URL de Supabase Storage")
+    .regex(
+      /^(\/carteles\/[^/]+|https:\/\/[^/]+\/storage\/v1\/object\/public\/carteles\/[^/]+|https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/carteles\/[^/]+)\.(jpe?g|png|webp)$/,
+      "debe ser /carteles/<fichero> o una URL de Vercel Blob o Supabase Storage",
+    )
     .optional(),
   fuente: z.strictObject({ ...FuenteEventoBase.shape, recibido: fechaHora, url: z.url().optional() }),
   confianza: z.number().min(0).max(1),

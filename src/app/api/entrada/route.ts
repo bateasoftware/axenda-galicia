@@ -12,7 +12,7 @@ import { ArchivoNoValido, destinoConfigurado, prepararArchivo, recibir } from "@
 //   nota      texto que acompañaba al cartel (opcional)
 // Cabecera: Authorization: Bearer <ENTRADA_SECRETO>
 // Respuesta: { estado: "creado" | "duplicado" | "vacio" | "rechazado", eventos?, pr?, motivo? }
-// Destino: pendientes en Supabase (se revisan en /admin) o, sin Supabase, un pull request en GitHub.
+// Destino: pendientes en la base de datos (Turso o Supabase; se revisan en /admin) o, sin ella, un pull request en GitHub.
 
 export const maxDuration = 300; // un programa largo en PDF puede tardar varios minutos
 

@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { supabaseConfigurado } from "@/lib/almacen";
+import { remotoConfigurado } from "@/lib/almacen";
 import { fechaHoraGalicia } from "@/lib/fechas";
 import { ArchivoNoValido, destinoConfigurado, prepararArchivo, recibir } from "@/lib/recepcion";
 import { ArchivoGrande, clienteWhatsApp, configWhatsApp, firmaValida, mensajesDelAviso, RESPUESTAS, type MensajeEntrante } from "@/lib/whatsapp";
@@ -49,7 +49,7 @@ async function procesar(mensajes: MensajeEntrante[]) {
     const responder = (texto: string) => wa.texto(m.de, texto).catch((err) => console.error("[whatsapp] no se pudo responder:", err));
     await wa.marcarLeido(m.id).catch(() => {});
     if (!listo) {
-      console.error("[whatsapp] falta configuración (IA o Supabase): el mensaje no se procesa");
+      console.error("[whatsapp] falta configuración (IA o base de datos): el mensaje no se procesa");
       await responder(RESPUESTAS.error);
       continue;
     }
@@ -76,8 +76,8 @@ async function procesar(mensajes: MensajeEntrante[]) {
         canal: "whatsapp",
         recibido: fechaHoraGalicia(new Date(m.fecha * 1000)),
         nota: m.texto,
-        // El número solo se guarda para avisar al publicar (y solo en Supabase, nunca en git)
-        contacto: supabaseConfigurado() || !process.env.VERCEL ? { canal: "whatsapp", valor: m.de } : undefined,
+        // El número solo se guarda para avisar al publicar (y solo en la base de datos, nunca en git)
+        contacto: remotoConfigurado() || !process.env.VERCEL ? { canal: "whatsapp", valor: m.de } : undefined,
       });
       if (r.estado === "creado") await responder(r.eventos.length > 1 ? RESPUESTAS.recibidoVarios(r.eventos.length) : RESPUESTAS.recibido);
       else if (r.estado === "duplicado") await responder(RESPUESTAS.repetido);

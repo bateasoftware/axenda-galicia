@@ -1,7 +1,7 @@
 // Entrada de eventos: cartel, programa en PDF o texto → extracción con IA → pendientes de revisión.
 // Nada se publica solo. Dos destinos:
-//  - un almacén (Supabase en Vercel, ficheros en local): se revisa en /admin
-//  - un pull request en GitHub (si no hay Supabase): se revisa y se fusiona
+//  - un almacén (Turso o Supabase en Vercel, ficheros en local): se revisa en /admin
+//  - un pull request en GitHub (si no hay base de datos): se revisa y se fusiona
 // Los datos de quien envía nunca van al evento ni al PR; el contacto se guarda aparte y solo para avisarle.
 import type { Almacen, Contacto } from "./almacen";
 import { limpiarSlug as limpiar } from "./almacen/local";
@@ -73,7 +73,7 @@ const comprobar = (e: EventoBorrador) => {
 const esImagen = (a: Entrada["archivo"]): a is { datos: Buffer; tipo: "image/jpeg" | "image/png" | "image/webp" } =>
   !!a && a.tipo.startsWith("image/");
 
-/** Destino almacén (Supabase o local): un pendiente por evento */
+/** Destino almacén (Turso, Supabase o local): un pendiente por evento */
 export async function procesarEntrada(
   entrada: Entrada,
   deps: { almacen: Almacen; extraer: Extraer; duplicados?: BuscarDuplicados },

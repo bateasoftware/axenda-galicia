@@ -11,12 +11,12 @@
  *
  * Un cartel da un evento; un programa da un evento por acto. Los archivos procesados pasan a
  * data/entrada/procesadas/. Un archivo que ya llegó (mismo contenido) no se vuelve a extraer.
- * Con SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en .env.local, los pendientes van a Supabase.
+ * Con las variables de Turso (o Supabase) en .env.local, los pendientes van a la base de datos.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import fs from "node:fs";
 import path from "node:path";
-import { almacen } from "../src/lib/almacen";
+import { almacen, NOMBRE_ALMACEN } from "../src/lib/almacen";
 import { buscadorDuplicados } from "../src/lib/duplicados";
 import { procesarEntrada } from "../src/lib/entrada";
 import { extraer } from "../src/lib/extraccion";
@@ -51,7 +51,7 @@ async function main() {
   fs.mkdirSync(ENTRADA, { recursive: true });
   const archivos = fs.readdirSync(ENTRADA).filter((f) => EXTENSIONES.includes(path.extname(f).toLowerCase()));
   if (!archivos.length) return console.log("No hay imágenes ni PDF en data/entrada/");
-  console.log(`Destino: ${destino.tipo === "supabase" ? "Supabase" : "data/pendientes/"}\n`);
+  console.log(`Destino: ${NOMBRE_ALMACEN[destino.tipo]}\n`);
 
   for (const f of archivos) {
     const ruta = path.join(ENTRADA, f);

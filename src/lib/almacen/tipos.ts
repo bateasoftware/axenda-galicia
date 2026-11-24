@@ -46,7 +46,7 @@ export type RegistroCobertura = {
 export type ClaveOrigen = { hash?: string; id_fuente?: string; uid?: string };
 
 export interface Almacen {
-  readonly tipo: "local" | "supabase";
+  readonly tipo: "local" | "supabase" | "turso";
   pendientes(): Promise<Pendiente[]>;
   pendiente(id: string): Promise<Pendiente | null>;
   /** Eventos publicados que gestiona este almacén */

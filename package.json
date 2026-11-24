@@ -13,12 +13,15 @@
     "test": "tsx --test tests/*.test.ts",
     "revisar-fuentes": "tsx scripts/revisar-fuentes.ts",
     "importar": "tsx --env-file-if-exists=.env.local scripts/importar.ts",
-    "duplicados": "tsx --env-file-if-exists=.env.local scripts/duplicados.ts"
+    "duplicados": "tsx --env-file-if-exists=.env.local scripts/duplicados.ts",
+    "migrar-a-supabase": "tsx --env-file-if-exists=.env.local scripts/migrar-a-supabase.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.13.0",
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
+    "@libsql/client": "^0.18.0",
+    "@vercel/blob": "^2.9.0",
     "leaflet": "^1.9.4",
     "next": "16.4.6",
     "react": "19.3.0",

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import { almacen, almacenDisponible, type Pendiente } from "@/lib/almacen";
+import { almacen, almacenDisponible, NOMBRE_ALMACEN, type Pendiente } from "@/lib/almacen";
 import { exigirAdmin } from "@/lib/admin/sesion";
 import { capitalizar, fechaLarga, hora } from "@/lib/fechas";
 import { validarEvento } from "@/lib/validacion";
@@ -30,7 +30,7 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
   if (!almacenDisponible())
     return (
       <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
-        Falta configurar Supabase (<code>SUPABASE_URL</code> y <code>SUPABASE_SERVICE_ROLE_KEY</code>): en Vercel no hay otro sitio donde guardar los
+        Falta configurar la base de datos (Turso: <code>TURSO_DATABASE_URL</code>, <code>TURSO_AUTH_TOKEN</code> y <code>BLOB_READ_WRITE_TOKEN</code>): en Vercel no hay otro sitio donde guardar los
         pendientes. Ver <code>docs/pendientes-juan.md</code>.
       </p>
     );
@@ -52,7 +52,7 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
           </form>
         </div>
       </div>
-      <p className="mt-1 text-sm text-[var(--gris)]">Almacén: {a.tipo === "supabase" ? "Supabase" : "ficheros locales (data/pendientes)"}</p>
+      <p className="mt-1 text-sm text-[var(--gris)]">Almacén: {NOMBRE_ALMACEN[a.tipo]}</p>
       {descartado && <p className="mt-4 rounded-xl bg-[var(--arena)] p-3 text-sm">Descartado.</p>}
       {!pendientes.length && <p className="mt-10 text-center text-[var(--gris)]">No hay nada pendiente. 🎉</p>}
       <ul className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-3">

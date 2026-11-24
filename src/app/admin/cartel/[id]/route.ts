@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
-import { almacenLocal, supabaseConfigurado } from "@/lib/almacen";
+import { almacenLocal, remotoConfigurado } from "@/lib/almacen";
 import { autorizado } from "@/lib/admin/sesion";
 
-// Cartel de un pendiente en el almacén local (en Supabase los carteles tienen URL pública)
+// Cartel de un pendiente en el almacén local (en la nube los carteles tienen URL pública)
 const TIPOS: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" };
 
 export async function GET(_req: Request, ctx: RouteContext<"/admin/cartel/[id]">) {
-  if (!(await autorizado()) || supabaseConfigurado()) return new Response("No autorizado", { status: 401 });
+  if (!(await autorizado()) || remotoConfigurado()) return new Response("No autorizado", { status: 401 });
   const { id } = await ctx.params;
   if (!/^[a-z0-9-]+$/.test(id)) return new Response("No encontrado", { status: 404 });
   const raiz = process.cwd();

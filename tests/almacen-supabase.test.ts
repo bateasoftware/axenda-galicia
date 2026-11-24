@@ -1,7 +1,8 @@
 // Comprueba las peticiones a la API REST de Supabase con un fetch falso
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { almacenSupabase } from "../src/lib/almacen";
+import { almacen, almacenSupabase, remotoConfigurado } from "../src/lib/almacen";
+import { importarEnSupabase } from "../src/lib/almacen/supabase";
 import { evento } from "./ayudas";
 
 type Llamada = { metodo: string; url: string; cuerpo?: unknown; cabeceras: Record<string, string> };
@@ -82,4 +83,42 @@ describe("almacenSupabase", () => {
       () => [{ datos: evento() }, { datos: { slug: "roto" } }],
       async () => assert.equal((await a.publicados()).length, 1),
     ));
+});
+
+describe("migración desde Turso", () => {
+  test("copia eventos con su id y la URL de Blob del cartel, y los contactos", () =>
+    conFetch(
+      () => [],
+      async (llamadas) => {
+        await importarEnSupabase(
+          { url: URL_SB, clave: "clave" },
+          [{ id: ID, slug: "prueba-2026", estado: "publicado", datos: JSON.stringify(evento()), hash: null, cartel_url: "https://abc.public.blob.vercel-storage.com/carteles/1.jpg", duplicados: "[]", creado: "c", actualizado: "a", publicado: "p" }],
+          [{ evento_id: ID, canal: "whatsapp", valor: "34600000000", creado: "c" }],
+        );
+        assert.equal(llamadas.length, 2);
+        assert.match(llamadas[0].cabeceras.Prefer, /merge-duplicates/);
+        const [fila] = llamadas[0].cuerpo as { id: string; cartel_path: string; datos: { slug: string } }[];
+        assert.equal(fila.id, ID);
+        assert.equal(fila.cartel_path, "https://abc.public.blob.vercel-storage.com/carteles/1.jpg");
+        assert.equal(fila.datos.slug, "prueba-2026");
+      },
+    ));
+
+  test("un cartel_path con URL completa se usa tal cual", () =>
+    conFetch(
+      () => [{ ...fila, cartel_path: "https://abc.public.blob.vercel-storage.com/carteles/1.jpg" }],
+      async () => {
+        const [p] = await almacenSupabase({ url: URL_SB, clave: "k" }).pendientes();
+        assert.equal(p.cartel, "https://abc.public.blob.vercel-storage.com/carteles/1.jpg");
+      },
+    ));
+});
+
+describe("qué almacén se usa", () => {
+  const turso = { TURSO_DATABASE_URL: "libsql://x.turso.io", TURSO_AUTH_TOKEN: "t", BLOB_READ_WRITE_TOKEN: "b" };
+  const supa = { SUPABASE_URL: URL_SB, SUPABASE_SERVICE_ROLE_KEY: "k" };
+  test("Turso tiene prioridad (útil mientras se migra)", () => assert.equal(almacen({ ...turso, ...supa }).tipo, "turso"));
+  test("sin Turso, Supabase", () => assert.equal(almacen(supa).tipo, "supabase"));
+  test("Turso sin Blob no cuenta: los carteles no tendrían dónde ir", () => assert.equal(remotoConfigurado({ TURSO_DATABASE_URL: "libsql://x" }), false));
+  test("sin nada, ficheros locales", () => assert.equal(almacen({}).tipo, "local"));
 });

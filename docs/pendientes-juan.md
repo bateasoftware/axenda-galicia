@@ -2,7 +2,7 @@
 
 ## Por dónde empezar (en este orden)
 
-1. **Supabase** (bloque 5 A). Sin él no funcionan en Vercel ni el panel, ni el formulario, ni WhatsApp. Son 15 minutos.
+1. **Turso + Vercel Blob** (bloque 5 A). Sin ellos no funcionan en Vercel ni el panel, ni el formulario, ni WhatsApp. Son 15 minutos.
 2. **`ADMIN_CLAVE` y `ANTHROPIC_API_KEY` en Vercel** (bloques 3 y 6). Con esto ya tienes panel, formulario e importación.
 3. **Activar la importación diaria** (bloque 5 A, GitHub). Eventos de Cultura de Galicia y de Vigo cada mañana, sin hacer nada.
 4. **Privacidad y aviso legal** (bloque 5 C). Hace falta para WhatsApp en modo Live.
@@ -11,7 +11,7 @@
 
 Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisiones. Cada punto dice **qué** hacer, **por qué**, **dónde** y **qué me tienes que devolver**. Las variables de entorno van en Vercel (Settings → Environment Variables) y en tu `.env.local` para probar en local. **No me pases claves por el chat.**
 
-Última actualización: bloque 8 (cobertura). Todo el código de los 8 bloques está hecho; lo que queda en esta lista depende de ti.
+Última actualización: base de datos en Turso (con migración preparada a Supabase). Todo el código de los 8 bloques está hecho; lo que queda en esta lista depende de ti.
 
 ## Bloque 1 · Fuentes
 
@@ -64,27 +64,40 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
   - **Dónde:** `npm run duplicados` y las marcas "posible duplicado" en `/admin`.
   - **Devuélveme:** ejemplos de falsos positivos o de duplicados que se cuelen, y ajusto `src/lib/duplicados.ts`.
 
-## Bloque 5 · Supabase y WhatsApp Business
+## Bloque 5 · Base de datos y WhatsApp Business
 
-### A. Supabase (hace falta antes que WhatsApp y que el panel en Vercel)
+### A. Base de datos: Turso + Vercel Blob (hace falta antes que WhatsApp y que el panel en Vercel)
 
-**Por qué:** en Vercel no se puede escribir en disco. Los pendientes, los carteles y lo que publiques desde `/admin` se guardan en Supabase, y la web lee de ahí además de los JSON de `data/eventos`.
+**Por qué:** en Vercel no se puede escribir en disco. Los pendientes y lo que publiques desde `/admin` se guardan en **Turso**, los carteles en **Vercel Blob**, y la web lee de ahí además de los JSON de `data/eventos`. Las tablas se crean solas la primera vez: no hay que ejecutar SQL.
 
-- [ ] **Crear el proyecto** en https://supabase.com/dashboard → *New project*.
-  - Región: Europa (p. ej. Frankfurt). Plan: gratuito.
-  - Apunta la contraseña de la base de datos en tu gestor; a mí no me hace falta.
-- [ ] **Crear las tablas.** Ve a *SQL Editor* → *New query*, pega el contenido de `supabase/esquema.sql` y pulsa *Run*.
-  - Crea las tablas `eventos` y `contactos`, la seguridad (RLS) y el bucket público `carteles`.
-  - Se puede repetir sin perder datos.
-- [ ] **Copiar las claves** desde *Project Settings → API Keys* (o *Data API*):
-  - **Project URL** → variable `SUPABASE_URL`.
-  - **Clave secreta**: la `secret` (`sb_secret_…`) o la antigua `service_role` → variable `SUPABASE_SERVICE_ROLE_KEY`. **Es secreta:** solo en Vercel y en tu `.env.local`.
-- [ ] **Añadirlas en Vercel**, en *Settings → Environment Variables*, entorno *Production*. Después vuelve a desplegar.
+- [ ] **Crear una base de datos nueva para Axenda** en tu cuenta de Turso. No reutilices la del otro proyecto, para no mezclar datos ni permisos (el plan gratuito permite varias).
+  - **En la web:** https://app.turso.tech → *Databases* → *Create database*. Nombre: `axenda`. Región: Europa, la más cercana a Vercel (p. ej. Frankfurt o Irlanda).
+  - **O con la CLI:** `turso db create axenda`.
+- [ ] **Copiar la URL y crear un token:**
+  - **URL** (empieza por `libsql://`): en la página de la base, o con `turso db show axenda --url` → variable `TURSO_DATABASE_URL`.
+  - **Token de lectura y escritura:** *Generate token* (sin caducidad), o con `turso db tokens create axenda` → variable `TURSO_AUTH_TOKEN`. **Es secreto.**
+- [ ] **Crear el almacén de carteles (Vercel Blob):** Vercel → tu proyecto → *Storage* → *Create* → *Blob* → nombre `axenda-carteles` → *Connect* al proyecto (todos los entornos).
+  - Vercel añade sola la variable `BLOB_READ_WRITE_TOKEN`.
+  - Para tu `.env.local`, cópiala de *Storage → axenda-carteles → .env.local*, o usa `vercel env pull`.
+  - El plan gratuito de Blob da de sobra para carteles reducidos a 1600 px.
+- [ ] **Añadir `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` en Vercel**, en *Settings → Environment Variables*, entorno *Production*. Después vuelve a desplegar.
 - [ ] **Activar la importación diaria** en GitHub (repo → *Settings → Secrets and variables → Actions*):
-  - Secretos: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y `ANTHROPIC_API_KEY`.
+  - Secretos: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BLOB_READ_WRITE_TOKEN` y `ANTHROPIC_API_KEY`.
   - Variable (pestaña *Variables*): `IMPORTAR_ACTIVO` = `true`.
   - Se ejecuta cada mañana (`.github/workflows/importar.yml`). Puedes lanzarla a mano en *Actions → Importar eventos → Run workflow*.
-- **Devuélveme:** "Supabase listo". Con eso compruebo en producción que el panel y la web leen bien.
+- **Devuélveme:** "Turso listo". Con eso compruebo en producción que el panel y la web leen bien.
+
+### A2. Pasar a Supabase más adelante (cuando quieras)
+
+Está preparado para que sea un trámite de unos 20 minutos, sin tocar código:
+
+1. Crea el proyecto en https://supabase.com/dashboard y ejecuta `supabase/esquema.sql` en su *SQL Editor*.
+2. Pon en tu `.env.local` las variables de Supabase (`SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`) **junto a** las de Turso.
+3. Ejecuta `npm run migrar-a-supabase -- --simular` para ver qué copiaría, y después `npm run migrar-a-supabase`.
+   - Copia pendientes, publicados, descartados y contactos, con los mismos ids y fechas.
+   - Se puede repetir sin duplicar.
+4. Pon las variables de Supabase en Vercel y **quita las de Turso**. Mientras estén las de Turso, la app sigue usando Turso.
+5. Los carteles se quedan en Vercel Blob, con las mismas URL: **no borres el almacén de Blob.**
 
 ### B. WhatsApp Business (Cloud API)
 
@@ -110,7 +123,7 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
 - [ ] **8. Poner las variables en Vercel** (Production) y volver a desplegar:
   - `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET` y `WHATSAPP_VERIFY_TOKEN`;
   - `NEXT_PUBLIC_WHATSAPP_NUMERO` (el número con prefijo y sin "+", p. ej. `34600123456`), para mostrarlo en `/enviar`.
-  - Si no lo están ya: `ANTHROPIC_API_KEY` y las de Supabase.
+  - Si no lo están ya: `ANTHROPIC_API_KEY` y las de Turso.
 - [ ] **9. Configurar el webhook** en la app → *WhatsApp → Configuración*:
   - *URL de devolución de llamada*: `https://axenda-galicia.vercel.app/api/whatsapp` (o tu dominio).
   - *Token de verificación*: el del paso 7 → *Verificar y guardar*.
@@ -143,7 +156,7 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
   - **Devuélveme:** nada.
 - [ ] **Saber cómo se publica según dónde estés:**
   - **En local** (`npm run dev` → http://localhost:3000/admin): publicar escribe en `data/eventos/` y copia el cartel a `public/carteles/`. Después tienes que hacer `git commit` y `push`.
-  - **En Vercel** (con Supabase): publicar guarda en Supabase y la web se actualiza sola en unos segundos.
+  - **En Vercel** (con Turso): publicar guarda en la base de datos y la web se actualiza sola en unos segundos.
 - [ ] **Avisos al organizador:**
   - Si vino por WhatsApp, se le manda solo (con la plantilla del bloque 5 si pasaron más de 24 h).
   - Si vino por email o el formulario, el panel te prepara el mensaje para copiar o responder.
@@ -151,8 +164,8 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
 
 ## Bloque 7 · Organizadores, formulario y widget
 
-- [ ] **Formulario de `/enviar`:** funciona en cuanto haya `ANTHROPIC_API_KEY` y Supabase en Vercel.
-  - Sin Supabase abre un PR en GitHub, y el email de aviso no se guarda.
+- [ ] **Formulario de `/enviar`:** funciona en cuanto haya `ANTHROPIC_API_KEY` y Turso en Vercel.
+  - Sin base de datos abre un PR en GitHub, y el email de aviso no se guarda.
   - Lleva un campo trampa para bots y un límite de envíos por IP.
 - [ ] **(Opcional) Antispam Cloudflare Turnstile**, si llega spam:
   - **Dónde:** https://dash.cloudflare.com → *Turnstile* → *Add widget*. Dominio: el de la web. Modo *Managed*.

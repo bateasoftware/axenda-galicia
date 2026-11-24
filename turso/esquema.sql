@@ -1,0 +1,27 @@
+-- Axenda en Turso (libSQL/SQLite). La app lo aplica sola al conectarse; este fichero es para consultarlo o ejecutarlo a mano
+-- con: turso db shell <base> < turso/esquema.sql
+-- Mismo formato que supabase/esquema.sql: el evento completo va en "datos" (JSON). Migración: npm run migrar-a-supabase
+CREATE TABLE IF NOT EXISTS eventos (
+  id          TEXT PRIMARY KEY,
+  slug        TEXT NOT NULL,
+  estado      TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'publicado', 'descartado')),
+  datos       TEXT NOT NULL,
+  id_fuente   TEXT GENERATED ALWAYS AS (json_extract(datos, '$.fuente.id_fuente')) VIRTUAL,
+  uid         TEXT GENERATED ALWAYS AS (json_extract(datos, '$.fuente.uid')) VIRTUAL,
+  hash        TEXT,
+  cartel_url  TEXT,
+  duplicados  TEXT NOT NULL DEFAULT '[]',
+  creado      TEXT NOT NULL,
+  actualizado TEXT NOT NULL,
+  publicado   TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS eventos_slug_publicado ON eventos (slug) WHERE estado = 'publicado';
+CREATE INDEX IF NOT EXISTS eventos_estado ON eventos (estado, creado);
+CREATE INDEX IF NOT EXISTS eventos_hash ON eventos (hash);
+CREATE INDEX IF NOT EXISTS eventos_origen ON eventos (id_fuente, uid);
+CREATE TABLE IF NOT EXISTS contactos (
+  evento_id TEXT PRIMARY KEY,
+  canal     TEXT NOT NULL CHECK (canal IN ('whatsapp', 'email')),
+  valor     TEXT NOT NULL,
+  creado    TEXT NOT NULL
+);

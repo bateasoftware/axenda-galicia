@@ -1,7 +1,7 @@
 // Lo común a todos los canales de entrada (email, formulario, WhatsApp): preparar el archivo
 // y elegir dónde se guarda lo recibido.
 import { createHash } from "node:crypto";
-import { almacen, almacenDisponible, supabaseConfigurado } from "./almacen";
+import { almacen, almacenDisponible, remotoConfigurado } from "./almacen";
 import { procesarEntrada, procesarEntradaGitHub, type Entrada, type ResultadoEntrada } from "./entrada";
 import { extraer } from "./extraccion";
 import { clienteGitHub } from "./github";
@@ -25,14 +25,14 @@ export async function prepararArchivo(datos: Buffer): Promise<{ archivo: NonNull
 
 /**
  * Dónde se guarda lo recibido:
- *  - "almacen": Supabase si está configurado; en local (fuera de Vercel) sin GitHub, ficheros en data/pendientes
- *  - "github": un pull request por envío (Vercel sin Supabase)
+ *  - "almacen": Turso o Supabase si están configurados; en local (fuera de Vercel) sin GitHub, ficheros en data/pendientes
+ *  - "github": un pull request por envío (Vercel sin base de datos)
  *  - null: falta configuración (la clave de la IA o un destino)
  */
 export function destinoConfigurado(env: Record<string, string | undefined> = process.env): "almacen" | "github" | null {
   if (!env.ANTHROPIC_API_KEY) return null;
   const github = !!(env.GITHUB_TOKEN && env.GITHUB_REPO);
-  if (supabaseConfigurado(env) || (almacenDisponible(env) && !github)) return "almacen";
+  if (remotoConfigurado(env) || (almacenDisponible(env) && !github)) return "almacen";
   return github ? "github" : null;
 }
 

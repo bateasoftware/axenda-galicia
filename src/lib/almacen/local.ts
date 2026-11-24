@@ -1,4 +1,4 @@
-// Solo se usa en local (en Vercel el almacén es Supabase): las rutas no se rastrean en el build (turbopackIgnore).
+// Solo se usa en local (en Vercel el almacén es Turso o Supabase): las rutas no se rastrean en el build (turbopackIgnore).
 // Almacén en ficheros (desarrollo y scripts). Formato compatible con `npm run extraer`:
 //   data/pendientes/<id>.json        evento + campos internos (_imagen, _cartel, _hash, _duplicados, _creado)
 //   data/pendientes/carteles/<id>.*  cartel de los pendientes que no vienen de data/entrada

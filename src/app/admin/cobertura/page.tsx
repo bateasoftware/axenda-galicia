@@ -37,14 +37,14 @@ const COLOR_CANAL: Record<string, string> = {
 
 async function Contenido() {
   await exigirAdmin();
-  if (!almacenDisponible()) return <p className="mt-6">Falta configurar Supabase.</p>;
+  if (!almacenDisponible()) return <p className="mt-6">Falta configurar la base de datos (ver docs/pendientes-juan.md).</p>;
   const a = almacen();
   const registros: RegistroCobertura[] = await a.cobertura();
-  // Con Supabase, lo publicado en data/eventos (git) también cuenta
-  if (a.tipo === "supabase") {
-    const enSupabase = new Set((await a.publicados()).map((e) => e.slug));
+  // Con la base de datos en la nube, lo publicado en data/eventos (git) también cuenta
+  if (a.tipo !== "local") {
+    const enLaNube = new Set((await a.publicados()).map((e) => e.slug));
     for (const e of await todosLosEventos())
-      if (!enSupabase.has(e.slug))
+      if (!enLaNube.has(e.slug))
         registros.push({ estado: "publicado", canal: e.fuente.canal, id_fuente: e.fuente.id_fuente, concello: e.concello, inicio: e.sesiones[0]?.inicio, recibido: e.fuente.recibido });
   }
   await connection(); // la fecha de hoy, en cada petición

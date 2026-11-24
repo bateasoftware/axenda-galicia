@@ -93,7 +93,7 @@ export function coincidencias(e: Candidato["evento"], lista: Candidato[]): Coinc
   return r.sort((a, b) => b.parecido - a.parecido);
 }
 
-/** Eventos publicados en data/eventos (también cuando el almacén es Supabase) */
+/** Eventos publicados en data/eventos (también cuando el almacén está en la nube) */
 function publicadosEnFicheros(): Evento[] {
   const dir = path.join(process.cwd(), "data", "eventos");
   try {
@@ -109,8 +109,8 @@ function publicadosEnFicheros(): Evento[] {
 /** Todo lo que puede estar repetido: pendientes y publicados */
 export async function candidatosDe(almacen: Almacen): Promise<Candidato[]> {
   const publicados = new Map<string, Evento>();
-  // Con Supabase, los publicados en data/eventos siguen contando (en local ya los da el almacén)
-  if (almacen.tipo === "supabase") for (const e of publicadosEnFicheros()) publicados.set(e.slug, e);
+  // Con un almacén en la nube, los publicados en data/eventos siguen contando (en local ya los da el almacén)
+  if (almacen.tipo !== "local") for (const e of publicadosEnFicheros()) publicados.set(e.slug, e);
   for (const e of await almacen.publicados()) publicados.set(e.slug, e);
   return [
     ...[...publicados.values()].map((e) => ({ ref: `evento:${e.slug}`, evento: e })),
