@@ -1,0 +1,45 @@
+{
+  "slug": "acendido-nadal-gondomar-2026",
+  "titulo": "Encendido de Navidad en Gondomar",
+  "titulo_gl": "Acendido de Nadal en Gondomar",
+  "resumen": "Magosto popular, concierto de Broken Peach y, al terminar, el gran encendido de las luces de Navidad en la Praza Paradela.",
+  "sesiones": [
+    {
+      "inicio": "2026-11-22T17:00",
+      "nota": "Magosto popular"
+    },
+    {
+      "inicio": "2026-11-22T18:00",
+      "nota": "Concierto de Broken Peach y, al remate, gran acendido de Nadal"
+    }
+  ],
+  "lugares": [
+    {
+      "nombre": "Praza Paradela",
+      "lat": 42.1115,
+      "lng": -8.7608,
+      "aprox": true
+    }
+  ],
+  "concello": "Gondomar",
+  "organizadores": [
+    "Concello de Gondomar"
+  ],
+  "categorias": [
+    "navidad",
+    "musica",
+    "gastronomia",
+    "fiestas"
+  ],
+  "cartel": "/carteles/acendido-nadal-gondomar-2026.jpg",
+  "idioma": "gl",
+  "fuente": {
+    "canal": "whatsapp",
+    "recibido": "2026-11-19T09:52"
+  },
+  "inferido": [
+    "año",
+    "concello (por el escudo)"
+  ],
+  "confianza": 0.92
+}

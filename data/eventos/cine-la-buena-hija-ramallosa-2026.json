@@ -1,0 +1,40 @@
+{
+  "slug": "cine-la-buena-hija-ramallosa-2026",
+  "titulo": "Cine: «La buena hija», de Júlia de Paz Solvas",
+  "resumen": "Proyección de «La buena hija», premiada como mejor película en el Festival de Málaga, en los Cines Municipais da Ramallosa.",
+  "sesiones": [
+    {
+      "inicio": "2026-11-25T19:00"
+    }
+  ],
+  "lugares": [
+    {
+      "nombre": "Cines Municipais da Ramallosa",
+      "direccion": "A Ramallosa, Nigrán",
+      "lat": 42.1226,
+      "lng": -8.8195,
+      "aprox": true
+    }
+  ],
+  "concello": "Nigrán",
+  "organizadores": [
+    "Concello de Nigrán",
+    "CIM Nigrán"
+  ],
+  "categorias": [
+    "cine",
+    "cultura"
+  ],
+  "cartel": "/carteles/cine-la-buena-hija-ramallosa-2026.jpg",
+  "idioma": "mixto",
+  "fuente": {
+    "canal": "whatsapp",
+    "recibido": "2026-11-23T14:19"
+  },
+  "inferido": [
+    "año",
+    "organizador (por logos)",
+    "precio no indicado"
+  ],
+  "confianza": 0.88
+}

@@ -1,0 +1,46 @@
+{
+  "slug": "mercadillo-navidad-hotel-entre-robles-2026",
+  "titulo": "Mercadillo de Navidad en el Hotel Entre Robles",
+  "resumen": "Un año más, mercadillo navideño durante dos días en el Hotel Entre Robles de Sabaris.",
+  "sesiones": [
+    {
+      "inicio": "2026-11-21T10:30",
+      "fin": "2026-11-21T20:30"
+    },
+    {
+      "inicio": "2026-11-22T10:30",
+      "fin": "2026-11-22T20:00"
+    }
+  ],
+  "lugares": [
+    {
+      "nombre": "Hotel Entre Robles",
+      "direccion": "Sabaris, Baiona",
+      "lat": 42.1172,
+      "lng": -8.8172,
+      "aprox": true
+    }
+  ],
+  "concello": "Baiona",
+  "parroquia": "Sabaris",
+  "organizadores": [
+    "Hotel Entre Robles"
+  ],
+  "categorias": [
+    "mercadillo",
+    "navidad"
+  ],
+  "cartel": "/carteles/mercadillo-navidad-entre-robles-2026.jpg",
+  "idioma": "es",
+  "fuente": {
+    "canal": "whatsapp",
+    "recibido": "2026-11-19T09:59"
+  },
+  "inferido": [
+    "año",
+    "hora de cierre (pone 8:30 / 8:00, se entiende de la tarde)",
+    "organizador"
+  ],
+  "confianza": 0.85,
+  "recurrente": true
+}

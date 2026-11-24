@@ -1,0 +1,44 @@
+{
+  "slug": "encendido-luces-super-giraldez-sabaris-2026",
+  "titulo": "Encendido de luces 2026 en Súper Giraldez",
+  "resumen": "Fiesta de encendido de luces navideñas con concierto de La Patrulla en directo, animación infantil, DJ, visita de Papá Noel y copa de espumoso de regalo.",
+  "sesiones": [
+    {
+      "inicio": "2026-11-22T17:30"
+    }
+  ],
+  "lugares": [
+    {
+      "nombre": "Súper Giraldez",
+      "direccion": "Quirincosta 2, Sabaris, Baiona",
+      "lat": 42.1197,
+      "lng": -8.8226,
+      "aprox": true
+    }
+  ],
+  "concello": "Baiona",
+  "parroquia": "Sabaris",
+  "organizadores": [
+    "Súper Giraldez"
+  ],
+  "categorias": [
+    "navidad",
+    "musica",
+    "infantil",
+    "comercial"
+  ],
+  "extras": [
+    "Concierto de La Patrulla",
+    "Animación para niños",
+    "DJ",
+    "Visita de Papá Noel"
+  ],
+  "cartel": "/carteles/encendido-luces-super-giraldez-2026.jpg",
+  "idioma": "es",
+  "fuente": {
+    "canal": "whatsapp",
+    "recibido": "2026-11-19T09:57"
+  },
+  "confianza": 0.95,
+  "comercial": true
+}

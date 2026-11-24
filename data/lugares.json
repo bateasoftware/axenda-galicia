@@ -1,0 +1,97 @@
+{
+  "_nota": "Lugares conocidos por concello. Coordenadas aproximadas: revisar en un mapa y marcar aprox=false.",
+  "concellos": {
+    "Baiona": {
+      "lat": 42.1183,
+      "lng": -8.8497,
+      "parroquias": [
+        "Baiña",
+        "Baredo",
+        "Belesar",
+        "Baiona",
+        "Sabaris",
+        "Santa Cristina da Ramallosa"
+      ]
+    },
+    "Nigrán": {
+      "lat": 42.1417,
+      "lng": -8.8058,
+      "parroquias": [
+        "Camos",
+        "Chandebrito",
+        "Nigrán",
+        "Panxón",
+        "Parada",
+        "Priegue",
+        "Ramallosa"
+      ]
+    },
+    "Gondomar": {
+      "lat": 42.1115,
+      "lng": -8.7614,
+      "parroquias": [
+        "Borreiros",
+        "Chaín",
+        "Couso",
+        "Donas",
+        "Gondomar",
+        "Mañufe",
+        "Morgadáns",
+        "Peitieiros",
+        "Vincios"
+      ]
+    },
+    "Vigo": {
+      "lat": 42.2406,
+      "lng": -8.7207,
+      "parroquias": []
+    }
+  },
+  "lugares": [
+    {
+      "nombre": "Praza Paradela",
+      "concello": "Gondomar",
+      "lat": 42.1115,
+      "lng": -8.7608,
+      "aprox": true
+    },
+    {
+      "nombre": "IES Auga da Laxe",
+      "concello": "Gondomar",
+      "lat": 42.1101,
+      "lng": -8.7583,
+      "aprox": true
+    },
+    {
+      "nombre": "Complexo Deportivo As Cercas",
+      "concello": "Gondomar",
+      "lat": 42.1127,
+      "lng": -8.7569,
+      "aprox": true
+    },
+    {
+      "nombre": "Hotel Entre Robles",
+      "concello": "Baiona",
+      "parroquia": "Sabaris",
+      "lat": 42.1172,
+      "lng": -8.8172,
+      "aprox": true
+    },
+    {
+      "nombre": "Súper Giraldez",
+      "direccion": "Quirincosta 2, Sabaris",
+      "concello": "Baiona",
+      "parroquia": "Sabaris",
+      "lat": 42.1197,
+      "lng": -8.8226,
+      "aprox": true
+    },
+    {
+      "nombre": "Cines Municipais da Ramallosa",
+      "concello": "Nigrán",
+      "lat": 42.1226,
+      "lng": -8.8195,
+      "aprox": true
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "slug": "torneo-escolar-tenis-solidario-nadal-gondomar-2026",
+  "titulo": "XVI Torneo Escolar de Tenis Solidario de Navidad – ¡Todos con Nora!",
+  "titulo_gl": "XVI Torneo Escolar de Tenis Solidario de Nadal – ¡Todos con Nora!",
+  "resumen": "Torneo escolar solidario de tenis para categorías peques, prebenjamín, benjamín, alevín e infantil, con cuentacuentos a media mañana.",
+  "sesiones": [
+    {
+      "inicio": "2026-11-28T09:30",
+      "fin": "2026-11-28T13:30"
+    }
+  ],
+  "lugares": [
+    {
+      "nombre": "IES Auga da Laxe",
+      "lat": 42.1101,
+      "lng": -8.7583,
+      "aprox": true
+    },
+    {
+      "nombre": "Pistas del Complexo Deportivo As Cercas",
+      "direccion": "Junto a la Policía Local, Gondomar",
+      "lat": 42.1127,
+      "lng": -8.7569,
+      "aprox": true
+    }
+  ],
+  "concello": "Gondomar",
+  "organizadores": [
+    "Concello de Gondomar",
+    "Club de Tenis Gondomar"
+  ],
+  "categorias": [
+    "deporte",
+    "solidario",
+    "infantil"
+  ],
+  "publico": "Peques, prebenjamín, benjamín, alevín e infantil",
+  "inscripcion": {
+    "url": "https://l1nk.dev/5ppo8ac",
+    "telefono": "680 124 239",
+    "email": "ctgondomar@hotmail.es",
+    "hasta": "2026-11-26"
+  },
+  "extras": [
+    "Cuentacuentos a media mañana",
+    "Colabora: Asociación CTNNB1"
+  ],
+  "cartel": "/carteles/torneo-tenis-solidario-gondomar-2026.jpg",
+  "idioma": "gl",
+  "fuente": {
+    "canal": "whatsapp",
+    "recibido": "2026-11-19T18:22"
+  },
+  "inferido": [
+    "año"
+  ],
+  "confianza": 0.9,
+  "recurrente": true
+}
