@@ -13,10 +13,11 @@ function erroresZod(error: z.ZodError): string[] {
 }
 
 /**
- * Valida un evento ya parseado. `raiz` es la carpeta del proyecto (para comprobar que el cartel existe).
+ * Valida un evento ya parseado. `raiz` es la carpeta del proyecto, para comprobar que el cartel existe;
+ * con `null` no se comprueba (p. ej. cuando el cartel aún va a subirse en un pull request).
  * Los avisos no impiden publicar; los errores sí.
  */
-export function validarEvento(datos: unknown, raiz: string, nombreFichero?: string): Resultado<Evento> {
+export function validarEvento(datos: unknown, raiz: string | null, nombreFichero?: string): Resultado<Evento> {
   const r = EventoSchema.safeParse(datos);
   if (!r.success) return { ok: false, errores: erroresZod(r.error), avisos: [] };
   const e = r.data;
@@ -24,7 +25,7 @@ export function validarEvento(datos: unknown, raiz: string, nombreFichero?: stri
   const avisos: string[] = [];
 
   if (nombreFichero && nombreFichero !== `${e.slug}.json`) errores.push(`slug "${e.slug}" no coincide con el fichero ${nombreFichero}`);
-  if (e.cartel && !fs.existsSync(path.join(raiz, "public", e.cartel))) errores.push(`cartel: no existe public${e.cartel}`);
+  if (raiz && e.cartel && !fs.existsSync(path.join(raiz, "public", e.cartel))) errores.push(`cartel: no existe public${e.cartel}`);
 
   if (e.confianza < UMBRAL_CONFIANZA) avisos.push(`confianza baja (${e.confianza})`);
   const aprox = e.lugares.filter((l) => l.aprox).map((l) => l.nombre);

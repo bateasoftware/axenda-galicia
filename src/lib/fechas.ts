@@ -57,6 +57,13 @@ export function diasDelEvento(e: Evento): string[] {
   return [...set].sort();
 }
 
+/** Fecha y hora de Galicia como "YYYY-MM-DDTHH:MM" (para la hora de recepción de un cartel) */
+export function fechaHoraGalicia(fecha: Date = new Date()): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid", dateStyle: "short", timeStyle: "short" })
+    .format(fecha)
+    .replace(" ", "T");
+}
+
 /** Hoy en Galicia como YYYY-MM-DD (solo en cliente o en tiempo de petición) */
 export function hoyGalicia(): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date());

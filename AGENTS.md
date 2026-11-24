@@ -13,6 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Lee `docs/vision.md` antes de proponer funcionalidades**: concepto, público, fases, monetización y decisiones ya tomadas.
 - Interfaz y contenido en castellano (los eventos pueden traer título en gallego, `titulo_gl`).
 - Modelo de datos en `src/lib/tipos.ts` (esquema zod: de ahí salen los tipos, la validación y el formato de salida del extractor). Si cambia, revisa las reglas del prompt en `scripts/extraer.ts` y actualiza `supabase/esquema.sql`.
+- Entrada de eventos: `src/lib/entrada.ts` (cartel → `extraccion.ts` → PR en GitHub con `github.ts`), expuesta en `/api/entrada`. Nada se publica sin que una persona fusione el PR. Los PR nunca llevan datos de quien envía el cartel.
 - Los datos se validan con `npm run validar`; un evento no válido en `data/eventos` hace fallar el build.
 - Los eventos se leen solo a través de `src/lib/eventos.ts` (cuando se migre a Supabase, solo cambia ese archivo).
 - Fechas como hora local de Galicia sin zona (`YYYY-MM-DDTHH:MM`). Helpers en `src/lib/fechas.ts`.

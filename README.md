@@ -12,7 +12,11 @@ Agenda de eventos de Val Miñor y Vigo (y, más adelante, de toda Galicia). Es u
 - **Datos (fase 1)**: un JSON por evento en `data/eventos/`, con git como CMS. Cada push a `main` despliega.
 - **Datos (fase 2)**: Supabase + PostGIS. El esquema está en `supabase/esquema.sql`; basta con sustituir `src/lib/eventos.ts`.
 
-## Flujo para publicar eventos
+## Entrada automática (recomendada)
+
+Los carteles que llegan por email (y, más adelante, por el formulario web y WhatsApp) pasan por `/api/entrada`: la IA extrae los datos y se abre un **pull request** con el evento. Revisas la vista previa desde el móvil y, si está bien, fusionas: Vercel lo publica. Puesta en marcha y detalles: [`docs/entrada-automatica.md`](docs/entrada-automatica.md).
+
+## Flujo manual para publicar eventos
 
 ```bash
 cp .env.example .env.local        # y pon tu ANTHROPIC_API_KEY
@@ -56,7 +60,7 @@ Cada push a `main` y cada pull request pasan por la GitHub Action de `.github/wo
 ## Próximos pasos
 
 1. Dominio propio y `NEXT_PUBLIC_SITE_URL`.
-2. Número de WhatsApp Business (Cloud API) → webhook → extracción automática → cola de revisión.
+2. Formulario web y número de WhatsApp Business (Cloud API) → mismo endpoint `/api/entrada` → PR de revisión.
 3. Panel de revisión (aprobar o editar) y paso a Supabase.
 4. Newsletter "Plan de finde" y destacados de pago en autoservicio.
 5. Corregir las coordenadas en `data/lugares.json` y ampliarlo comarca a comarca.
