@@ -3,11 +3,12 @@
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { almacen, slugLibre } from "@/lib/almacen";
+import { almacen, slugLibre, type Almacen } from "@/lib/almacen";
 import { formularioAEvento } from "@/lib/admin/formulario";
 import { COOKIE_PUBLICADO, type ResultadoPublicacion } from "@/lib/admin/publicacion";
 import { abrirSesion, cerrarSesion, claveCorrecta, exigirAdmin } from "@/lib/admin/sesion";
-import { ETIQUETA_EVENTOS, todosLosEventos } from "@/lib/eventos";
+import { ETIQUETA_EVENTOS, eventosDelRepositorio, todosLosEventos } from "@/lib/eventos";
+import { prepararArchivo } from "@/lib/recepcion";
 import { SITIO } from "@/lib/sitio";
 import { validarEvento } from "@/lib/validacion";
 import { clienteWhatsApp, configWhatsApp, mensajePublicado } from "@/lib/whatsapp";
@@ -27,7 +28,21 @@ export async function salir() {
   redirect("/admin/entrar");
 }
 
-export type EstadoRevision = { tipo: "inicial" } | { tipo: "errores"; errores: string[] } | { tipo: "guardado"; avisos: string[] };
+export type EstadoRevision = { tipo: "inicial" } | { tipo: "errores"; errores: string[] } | { tipo: "guardado"; avisos: string[]; enWeb?: boolean };
+
+/** Si el formulario trae un cartel nuevo, lo guarda (reducido y sin metadatos). Devuelve el error, si lo hay. */
+async function guardarCartel(a: Almacen, id: string, f: FormData, estado: "pendiente" | "publicado"): Promise<string | null> {
+  const archivo = f.get("cartel");
+  if (!(archivo instanceof File) || !archivo.size) return null;
+  try {
+    const p = await prepararArchivo(Buffer.from(await archivo.arrayBuffer()));
+    if (p.archivo.tipo !== "image/jpeg") return "El cartel tiene que ser una imagen (JPG, PNG o WebP), no un PDF.";
+    await a.ponerCartel(id, { datos: p.archivo.datos, tipo: "image/jpeg" }, estado);
+    return null;
+  } catch {
+    return "No se ha podido guardar el cartel: comprueba que es una imagen válida.";
+  }
+}
 
 /** Guarda los cambios o publica, según el botón pulsado ("accion": guardar | publicar) */
 export async function revisar(id: string, _previo: EstadoRevision, f: FormData): Promise<EstadoRevision> {
@@ -41,6 +56,8 @@ export async function revisar(id: string, _previo: EstadoRevision, f: FormData):
 
   if (f.get("accion") !== "publicar") {
     await a.guardar(id, evento);
+    const errorCartel = await guardarCartel(a, id, f, "pendiente");
+    if (errorCartel) return { tipo: "errores", errores: [errorCartel] };
     const v = validarEvento(evento, null);
     return { tipo: "guardado", avisos: v.ok ? v.avisos : [...v.errores.map((e) => `Para publicar falta: ${e}`), ...v.avisos] };
   }
@@ -56,6 +73,10 @@ export async function revisar(id: string, _previo: EstadoRevision, f: FormData):
   // Los avisos de "deducido" ya los ha revisado quien publica
   const { inferido: _inferido, ...limpio } = v.valor;
   void _inferido;
+  // Un cartel nuevo se guarda antes de publicar para que salga con él
+  await a.guardar(id, evento);
+  const errorCartel = await guardarCartel(a, id, f, "pendiente");
+  if (errorCartel) return { tipo: "errores", errores: [errorCartel] };
   const r = await a.publicar(id, limpio);
   updateTag(ETIQUETA_EVENTOS);
 
@@ -85,4 +106,48 @@ export async function descartar(id: string) {
   await exigirAdmin();
   await almacen().descartar(id);
   redirect("/admin?descartado=1");
+}
+
+/** Evento publicado: de la base de datos (id) o de data/eventos ("git.<slug>"; en local son los mismos ficheros) */
+async function publicadoPorId(a: Almacen, id: string) {
+  if (id.startsWith("git.") && a.tipo !== "local") {
+    const e = eventosDelRepositorio().find((x) => x.slug === id.slice(4));
+    return e ? { id, evento: e, git: true as const } : null;
+  }
+  const p = await a.publicado(id);
+  return p ? { ...p, git: false as const } : null;
+}
+
+/** Guarda los cambios de un evento ya publicado (y su cartel, si se sube uno) */
+export async function editarPublicado(id: string, _previo: EstadoRevision, f: FormData): Promise<EstadoRevision> {
+  await exigirAdmin();
+  const a = almacen();
+  const actual = await publicadoPorId(a, id);
+  if (!actual) return { tipo: "errores", errores: ["Este evento ya no está publicado (¿retirado en otra pestaña?)."] };
+
+  const { evento, errores } = formularioAEvento(f, actual.evento);
+  if (errores.length) return { tipo: "errores", errores };
+  // La dirección de la página no cambia nunca: los enlaces que ya se han compartido siguen funcionando
+  const v = validarEvento({ ...evento, slug: actual.evento.slug }, null);
+  if (!v.ok) return { tipo: "errores", errores: v.errores };
+
+  let destino = id;
+  if (actual.git) destino = (await a.adoptar(v.valor)).id; // pasa a la base de datos: gana al de data/eventos
+  else await a.guardarPublicado(id, v.valor);
+  const errorCartel = await guardarCartel(a, destino, f, "publicado");
+  updateTag(ETIQUETA_EVENTOS);
+  if (errorCartel) return { tipo: "errores", errores: [`Los cambios se han guardado, pero: ${errorCartel}`] };
+  if (actual.git) redirect(`/admin/publicados/${destino}?guardado=1`);
+  return { tipo: "guardado", enWeb: true, avisos: v.avisos.filter((x) => !x.startsWith("deducido")) };
+}
+
+/** Quita un evento de la web. Queda guardado como descartado en la base de datos (o se borra el fichero en local). */
+export async function retirarPublicado(id: string) {
+  await exigirAdmin();
+  const a = almacen();
+  const actual = await publicadoPorId(a, id);
+  if (actual?.git) await a.retirarSlug(actual.evento.slug);
+  else if (actual) await a.retirar(id);
+  updateTag(ETIQUETA_EVENTOS);
+  redirect("/admin/publicados?retirado=1");
 }

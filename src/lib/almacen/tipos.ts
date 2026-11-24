@@ -45,6 +45,9 @@ export type RegistroCobertura = {
 
 export type ClaveOrigen = { hash?: string; id_fuente?: string; uid?: string };
 
+/** Un evento ya publicado, con el id con el que se edita o se retira en el panel */
+export type Publicado = { id: string; evento: Evento };
+
 export interface Almacen {
   readonly tipo: "local" | "supabase" | "turso";
   pendientes(): Promise<Pendiente[]>;
@@ -61,6 +64,21 @@ export interface Almacen {
   descartar(id: string): Promise<void>;
   /** Sustituye la lista de posibles duplicados de un pendiente */
   marcarDuplicados(id: string, duplicados: string[]): Promise<void>;
+  /** Pone (o cambia) el cartel de un pendiente o de un evento publicado. Devuelve su URL. */
+  ponerCartel(id: string, cartel: ImagenCartel, estado: "pendiente" | "publicado"): Promise<string>;
+  /** Publicados gestionados por este almacén, con su id (los de data/eventos solo en el almacén local) */
+  publicadosConId(): Promise<Publicado[]>;
+  publicado(id: string): Promise<Publicado | null>;
+  /** Guarda los cambios de un evento ya publicado (el slug no cambia: la URL sigue siendo la misma) */
+  guardarPublicado(id: string, evento: Evento): Promise<void>;
+  /** Quita un evento de la web (queda guardado como descartado, no se borra) */
+  retirar(id: string): Promise<void>;
+  /** Copia a la base de datos un evento que vive en data/eventos (git), para poder editarlo; gana al de git */
+  adoptar(evento: Evento): Promise<{ id: string }>;
+  /** Oculta de la web un evento que vive en data/eventos (git) */
+  retirarSlug(slug: string): Promise<void>;
+  /** Slugs de data/eventos que están ocultos */
+  slugsRetirados(): Promise<string[]>;
   /** Marca que ya se avisó al remitente (y borra su contacto) */
   olvidarContacto(id: string): Promise<void>;
   cobertura(): Promise<RegistroCobertura[]>;

@@ -45,6 +45,9 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl">Pendientes ({pendientes.length})</h1>
         <div className="flex gap-2 text-sm">
+          <Link href="/admin/publicados" className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 hover:border-[var(--tinta)]">
+            Publicados
+          </Link>
           <Link href="/admin/cobertura" className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 hover:border-[var(--tinta)]">
             Cobertura
           </Link>
@@ -88,7 +91,7 @@ function Tarjeta({ p }: { p: Pendiente }) {
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{e.titulo || "(sin título)"}</p>
           <p className="text-sm text-[var(--gris)]">
-            {ini ? `${capitalizar(fechaLarga(ini))}${hora(ini) && hora(ini) !== "00:00" ? ` · ${hora(ini)}` : ""}` : "sin fecha"} · {e.concello || "sin concello"}
+            {ini ? `${capitalizar(fechaLarga(ini))}${hora(ini) ? ` · ${hora(ini)}` : ""}` : "sin fecha"} · {e.concello || "sin concello"}
           </p>
           <p className="mt-1 text-xs text-[var(--gris)]">
             {NOMBRE_CANAL[e.fuente.canal] ?? e.fuente.canal}

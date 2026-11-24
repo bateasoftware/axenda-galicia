@@ -31,7 +31,7 @@ export function validarEvento(datos: unknown, raiz: string | null, nombreFichero
   const aprox = e.lugares.filter((l) => l.aprox).map((l) => l.nombre);
   if (aprox.length) avisos.push(`coordenadas aproximadas: ${aprox.join(", ")}`);
   if (e.inferido?.length) avisos.push(`deducido: ${e.inferido.join(", ")}`);
-  if (e.sesiones.some((s) => s.inicio.endsWith("T00:00"))) avisos.push("hay una sesión a las 00:00: ¿falta la hora?");
+  if (e.sesiones.some((s) => s.inicio.endsWith("T00:00"))) avisos.push("hay una sesión a las 00:00: ¿falta la hora? (si no tiene hora, déjala solo con el día)");
 
   return errores.length ? { ok: false, errores, avisos } : { ok: true, valor: e, avisos };
 }

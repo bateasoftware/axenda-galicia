@@ -1,5 +1,6 @@
 // Almacén en Supabase (tablas de supabase/esquema.sql y bucket "carteles" de Storage).
 // Usa la API REST (PostgREST) con la clave de servicio: solo en el servidor o en scripts, nunca en el cliente.
+import { randomUUID } from "node:crypto";
 import { primerInicio } from "../fechas";
 import { EventoSchema, type Evento, type EventoBorrador } from "../tipos";
 import { limpiarSlug, slugLibre } from "./local";
@@ -156,6 +157,69 @@ export function almacenSupabase({ url, clave }: { url: string; clave: string }):
       await rest(`contactos?evento_id=${eq(id)}`, { method: "DELETE" });
     },
 
+    async publicadosConId() {
+      const filas = await rest<{ id: string; datos: unknown }[]>(`eventos?estado=eq.publicado&select=id,datos&order=publicado.desc&limit=5000`);
+      return filas.flatMap((f) => {
+        const r = EventoSchema.safeParse(f.datos);
+        return r.success ? [{ id: f.id, evento: r.data }] : [];
+      });
+    },
+
+    async publicado(id) {
+      if (!/^[0-9a-f-]{36}$/.test(id)) return null;
+      const [f] = await rest<{ id: string; datos: unknown }[]>(`eventos?id=${eq(id)}&estado=eq.publicado&select=id,datos`);
+      const r = f && EventoSchema.safeParse(f.datos);
+      return r && r.success ? { id, evento: r.data } : null;
+    },
+
+    async guardarPublicado(id, evento) {
+      await rest(`eventos?id=${eq(id)}&estado=eq.publicado`, { method: "PATCH", body: JSON.stringify({ datos: evento, actualizado: new Date().toISOString() }) });
+    },
+
+    async retirar(id) {
+      const [f] = await rest<{ datos: Record<string, unknown> }[]>(`eventos?id=${eq(id)}&select=datos`);
+      if (!f) return;
+      // "_retirado" oculta también un evento de data/eventos con el mismo slug
+      await rest(`eventos?id=${eq(id)}`, { method: "PATCH", body: JSON.stringify({ estado: "descartado", datos: { ...f.datos, _retirado: true }, actualizado: new Date().toISOString() }) });
+      await rest(`contactos?evento_id=${eq(id)}`, { method: "DELETE" });
+    },
+
+    async adoptar(evento) {
+      const ahora = new Date().toISOString();
+      const [f] = await rest<{ id: string }[]>(`eventos?select=id`, {
+        method: "POST",
+        body: JSON.stringify({ slug: evento.slug, estado: "publicado", datos: evento, cartel_path: evento.cartel ?? null, publicado: ahora }),
+      });
+      return { id: f.id };
+    },
+
+    async retirarSlug(slug) {
+      await rest(`eventos`, { method: "POST", body: JSON.stringify({ slug, estado: "descartado", datos: { slug, _retirado: true } }) });
+    },
+
+    async slugsRetirados() {
+      return (await rest<{ slug: string }[]>(`eventos?estado=eq.descartado&datos->>_retirado=eq.true&select=slug`)).map((f) => f.slug);
+    },
+
+    async ponerCartel(id, cartel, estado) {
+      const [f] = await rest<{ datos: Record<string, unknown> }[]>(`eventos?id=${eq(id)}&estado=eq.${estado}&select=datos`);
+      if (!f) throw new Error(`No existe el evento ${id}`);
+      // Cartel nuevo = ruta nueva (la anterior podría estar en la caché de las imágenes)
+      const ruta = `${randomUUID()}.${EXT[cartel.tipo]}`;
+      const res = await fetch(`${base}/storage/v1/object/${BUCKET}/${ruta}`, {
+        method: "POST",
+        headers: { ...claves, "Content-Type": cartel.tipo, "x-upsert": "true" },
+        body: new Uint8Array(cartel.datos),
+      });
+      if (!res.ok) throw new ErrorSupabase(res.status, `Storage: ${(await res.text()).slice(0, 200)}`);
+      const url = urlPublica(ruta);
+      await rest(`eventos?id=${eq(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ cartel_path: ruta, ...(estado === "publicado" ? { datos: { ...f.datos, cartel: url } } : {}), actualizado: new Date().toISOString() }),
+      });
+      return url;
+    },
+
     async marcarDuplicados(id, duplicados) {
       await rest(`eventos?id=${eq(id)}`, { method: "PATCH", body: JSON.stringify({ duplicados }) });
     },
@@ -166,14 +230,16 @@ export function almacenSupabase({ url, clave }: { url: string; clave: string }):
 
     async cobertura() {
       const filas = await rest<{ estado: RegistroCobertura["estado"]; datos: EventoBorrador }[]>(`eventos?select=estado,datos&limit=10000`);
-      return filas.map(({ estado, datos: e }) => ({
-        estado,
-        canal: e.fuente.canal,
-        id_fuente: e.fuente.id_fuente,
-        concello: e.concello,
-        inicio: e.sesiones?.length ? primerInicio(e as Evento) : undefined,
-        recibido: e.fuente.recibido,
-      }));
+      return filas
+        .filter(({ datos: e }) => e.fuente) // las marcas de "oculto" de un evento de git no son eventos
+        .map(({ estado, datos: e }) => ({
+          estado,
+          canal: e.fuente.canal,
+          id_fuente: e.fuente.id_fuente,
+          concello: e.concello,
+          inicio: e.sesiones?.length ? primerInicio(e as Evento) : undefined,
+          recibido: e.fuente.recibido,
+        }));
     },
   };
 }

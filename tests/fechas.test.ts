@@ -2,6 +2,10 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import {
   conZona,
+  fechaSchema,
+  finValido,
+  haTerminado,
+  sumarDias,
   desfaseMadrid,
   diasDelEvento,
   fechaCorta,
@@ -79,6 +83,17 @@ describe("zona horaria de Madrid", () => {
     assert.equal(conZona("2026-07-01"), "2026-07-01T00:00:00+02:00");
   });
 
+  test("sesiones sin hora: fin válido, terminado y schema.org", () => {
+    assert.equal(finValido("2026-08-13", "2026-08-23"), true);
+    assert.equal(finValido("2026-08-13T10:00", "2026-08-13"), true, "si falta la hora en uno, se compara el día");
+    assert.equal(finValido("2026-08-13", "2026-08-12"), false);
+    assert.equal(haTerminado("2026-08-23", "2026-08-23T22:00"), false, "el último día sigue en curso");
+    assert.equal(haTerminado("2026-08-23", "2026-08-24T00:05"), true);
+    assert.equal(fechaSchema("2026-08-13"), "2026-08-13");
+    assert.equal(fechaSchema("2026-11-22T17:00"), "2026-11-22T17:00:00+01:00");
+    assert.equal(sumarDias("2026-12-31", 1), "2027-01-01");
+  });
+
   test("sumarHoras cruza medianoche y año", () => {
     assert.equal(sumarHoras("2026-12-31T23:00", 2), "2027-01-01T01:00");
     assert.equal(sumarHoras("2026-11-22T00:30", -1), "2026-11-21T23:30");
@@ -128,4 +143,11 @@ describe("generarICS", () => {
     assert.match(desplegado, /DESCRIPTION:Magosto\\, castañas\\; música/);
     assert.ok(desplegado.includes(`\\n${url}`));
   });
+});
+
+test("ICS de un evento sin hora: día completo, con DTEND exclusivo", () => {
+  const ics = generarICS(evento({ sesiones: [{ inicio: "2026-08-13", fin: "2026-08-23" }] }), "https://x.test/evento/a");
+  assert.ok(ics.includes("DTSTART;VALUE=DATE:20260813"));
+  assert.ok(ics.includes("DTEND;VALUE=DATE:20260824"));
+  assert.ok(!ics.includes("TZID=Europe/Madrid:2026"));
 });

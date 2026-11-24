@@ -8,7 +8,7 @@ import { limpiarSlug as limpiar } from "./almacen/local";
 import type { ClienteGitHub, PR } from "./github";
 import type { EntradaExtraccion, EventoExtraido, ResultadoExtraccion, TipoArchivo } from "./extraccion";
 import type { Canal, Evento, EventoBorrador } from "./tipos";
-import { capitalizar, fechaLarga, hora } from "./fechas";
+import { capitalizar, dia, fechaLarga, hora } from "./fechas";
 import { CATEGORIAS } from "./categorias";
 import { validarEvento } from "./validacion";
 
@@ -105,7 +105,10 @@ export async function procesarEntrada(
 /** Texto del pull request: lo justo para revisar desde el móvil. Nunca datos de quien lo envía. */
 export function cuerpoPR(e: Evento, validacion: { errores: string[]; avisos: string[] }, hash?: string): string {
   const sesiones = e.sesiones
-    .map((s) => `- ${capitalizar(fechaLarga(s.inicio))} · ${hora(s.inicio)}${s.fin ? `–${hora(s.fin)}` : ""}${s.nota ? ` · ${s.nota}` : ""}`)
+    .map(
+      (s) =>
+        `- ${capitalizar(fechaLarga(s.inicio))}${hora(s.inicio) ? ` · ${hora(s.inicio)}` : ""}${s.fin ? (dia(s.fin) === dia(s.inicio) ? `–${hora(s.fin)}` : ` → ${fechaLarga(s.fin)}`) : ""}${s.nota ? ` · ${s.nota}` : ""}`,
+    )
     .join("\n");
   const lugares = e.lugares.map((l) => `- ${l.nombre}${l.aprox ? " _(coordenadas aproximadas)_" : ""}`).join("\n");
   const lineas = [

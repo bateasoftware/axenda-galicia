@@ -201,6 +201,77 @@ export function almacenTurso({ cliente, subirCartel }: { cliente: () => Promise<
       );
     },
 
+    async publicadosConId() {
+      const salida: { id: string; evento: Evento }[] = [];
+      for (const f of await consulta(`SELECT ${CAMPOS} FROM eventos WHERE estado = 'publicado' ORDER BY publicado DESC`)) {
+        const r = EventoSchema.safeParse(JSON.parse(f.datos));
+        if (r.success) salida.push({ id: f.id, evento: r.data });
+      }
+      return salida;
+    },
+
+    async publicado(id) {
+      const [f] = await consulta(`SELECT ${CAMPOS} FROM eventos WHERE id = ? AND estado = 'publicado'`, [id]);
+      if (!f) return null;
+      const r = EventoSchema.safeParse(JSON.parse(f.datos));
+      return r.success ? { id, evento: r.data } : null;
+    },
+
+    async guardarPublicado(id, evento) {
+      await consulta("UPDATE eventos SET datos = ?, actualizado = ? WHERE id = ? AND estado = 'publicado'", [JSON.stringify(evento), ahora(), id]);
+    },
+
+    async retirar(id) {
+      await (await db()).batch(
+        [
+          // Queda guardado como descartado; "_retirado" oculta también un evento de data/eventos con el mismo slug
+          { sql: "UPDATE eventos SET estado = 'descartado', datos = json_set(datos, '$._retirado', 1), actualizado = ? WHERE id = ?", args: [ahora(), id] },
+          { sql: "DELETE FROM contactos WHERE evento_id = ?", args: [id] },
+        ],
+        "write",
+      );
+    },
+
+    async adoptar(evento) {
+      const id = randomUUID();
+      const t = ahora();
+      await consulta(
+        "INSERT INTO eventos (id, slug, estado, datos, hash, cartel_url, duplicados, creado, actualizado, publicado) VALUES (?, ?, 'publicado', ?, NULL, ?, '[]', ?, ?, ?)",
+        [id, evento.slug, JSON.stringify(evento), evento.cartel ?? null, t, t, t],
+      );
+      return { id };
+    },
+
+    async retirarSlug(slug) {
+      const t = ahora();
+      await consulta(
+        "INSERT INTO eventos (id, slug, estado, datos, hash, cartel_url, duplicados, creado, actualizado) VALUES (?, ?, 'descartado', ?, NULL, NULL, '[]', ?, ?)",
+        [randomUUID(), slug, JSON.stringify({ slug, _retirado: 1 }), t, t],
+      );
+    },
+
+    async slugsRetirados() {
+      return (await consulta("SELECT DISTINCT slug FROM eventos WHERE estado = 'descartado' AND json_extract(datos, '$._retirado') = 1")).map((f) => f.slug);
+    },
+
+    async ponerCartel(id, cartel, estado) {
+      const [f] = await consulta(`SELECT ${CAMPOS} FROM eventos WHERE id = ? AND estado = ?`, [id, estado]);
+      if (!f) throw new Error(`No existe el evento ${id}`);
+      // Cartel nuevo = id nuevo: la URL cambia y no se queda el anterior en la caché (que es de un año)
+      const cartelId = randomUUID();
+      const url = subirCartel ? await subirCartel(`carteles/${cartelId}.${EXT[cartel.tipo]}`, cartel) : rutaCartelTurso(cartelId, cartel.tipo);
+      const datos = JSON.parse(f.datos) as Record<string, unknown>;
+      if (estado === "publicado") datos.cartel = url;
+      const sentencias: InStatement[] = [];
+      if (!subirCartel) sentencias.push({ sql: "INSERT INTO carteles (id, tipo, datos, creado) VALUES (?, ?, ?, ?)", args: [cartelId, cartel.tipo, cartel.datos, ahora()] });
+      sentencias.push({ sql: "UPDATE eventos SET cartel_url = ?, datos = ?, actualizado = ? WHERE id = ?", args: [url, JSON.stringify(datos), ahora(), id] });
+      // El cartel anterior (si estaba en la tabla) se borra
+      const anterior = f.cartel_url?.match(/^\/cartel\/([0-9a-f-]{36})\./)?.[1];
+      if (anterior) sentencias.push({ sql: "DELETE FROM carteles WHERE id = ?", args: [anterior] });
+      await (await db()).batch(sentencias, "write");
+      return url;
+    },
+
     async marcarDuplicados(id, duplicados) {
       await consulta("UPDATE eventos SET duplicados = ? WHERE id = ?", [JSON.stringify(duplicados), id]);
     },
@@ -210,16 +281,19 @@ export function almacenTurso({ cliente, subirCartel }: { cliente: () => Promise<
     },
 
     async cobertura() {
-      return (await consulta("SELECT estado, datos FROM eventos")).map((f) => {
+      return (await consulta("SELECT estado, datos FROM eventos")).flatMap((f) => {
         const e = JSON.parse(f.datos) as EventoBorrador;
-        return {
-          estado: f.estado,
-          canal: e.fuente.canal,
-          id_fuente: e.fuente.id_fuente,
-          concello: e.concello,
-          inicio: e.sesiones?.length ? primerInicio(e as Evento) : undefined,
-          recibido: e.fuente.recibido,
-        };
+        if (!e.fuente) return []; // marca de "oculto" de un evento de git: no es un evento
+        return [
+          {
+            estado: f.estado,
+            canal: e.fuente.canal,
+            id_fuente: e.fuente.id_fuente,
+            concello: e.concello,
+            inicio: e.sesiones?.length ? primerInicio(e as Evento) : undefined,
+            recibido: e.fuente.recibido,
+          },
+        ];
       });
     },
 

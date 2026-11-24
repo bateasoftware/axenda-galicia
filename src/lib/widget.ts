@@ -1,6 +1,6 @@
 // HTML autónomo del widget "Agenda de la zona" (se sirve en /widget/agenda y se inserta con un iframe).
 import { CATEGORIAS } from "./categorias";
-import { capitalizar, fechaCorta, hora, primerInicio, ultimoFin } from "./fechas";
+import { capitalizar, fechaCorta, haTerminado, hora, primerInicio, ultimoFin } from "./fechas";
 import { slugConcello } from "./slug";
 import type { Evento } from "./tipos";
 
@@ -19,7 +19,7 @@ export function leerOpciones(q: URLSearchParams): OpcionesWidget {
 /** Próximos eventos (que no han terminado a la hora actual de Galicia) de los concellos pedidos */
 export function proximos(eventos: Evento[], ahora: string, o: OpcionesWidget): Evento[] {
   return eventos
-    .filter((e) => ultimoFin(e) >= ahora && (!o.concellos.length || o.concellos.includes(slugConcello(e.concello))))
+    .filter((e) => !haTerminado(ultimoFin(e), ahora) && (!o.concellos.length || o.concellos.includes(slugConcello(e.concello))))
     .sort((a, b) => primerInicio(a).localeCompare(primerInicio(b)))
     .slice(0, o.n);
 }
@@ -37,7 +37,7 @@ export function htmlWidget(eventos: Evento[], o: OpcionesWidget, sitio: { nombre
       const h = hora(ini);
       const cat = CATEGORIAS[e.categorias[0]];
       return `<li><a href="${esc(`${sitio.url}/evento/${e.slug}?${ref}`)}" target="_blank" rel="noopener">
-<span class="f">${esc(capitalizar(fechaCorta(ini)))}${h && h !== "00:00" ? ` · ${h}` : ""}</span>
+<span class="f">${esc(capitalizar(fechaCorta(ini)))}${h ? ` · ${h}` : ""}</span>
 <span class="t">${cat ? `${cat.emoji} ` : ""}${esc(e.titulo)}</span>
 <span class="l">${esc(e.lugares[0]?.nombre ?? "")} · ${esc(e.concello)}</span></a></li>`;
     })

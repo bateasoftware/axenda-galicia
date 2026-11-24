@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eventoPorSlug, slugConcello, todosLosEventos } from "@/lib/eventos";
-import { capitalizar, conZona, fechaLarga, hora, primerInicio, ultimoFin, dia } from "@/lib/fechas";
+import { capitalizar, fechaSchema, fechaLarga, hora, primerInicio, ultimoFin, dia } from "@/lib/fechas";
 import { SITIO } from "@/lib/sitio";
 import { EtiquetaCategoria } from "@/components/TarjetaEvento";
 import MapaEvento from "./MapaEvento";
@@ -63,8 +63,8 @@ export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]
     name: e.titulo,
     ...(e.titulo_gl && e.titulo_gl !== e.titulo ? { alternateName: e.titulo_gl } : {}),
     description: e.resumen,
-    startDate: conZona(e.sesiones[0].inicio),
-    endDate: conZona(ultima.fin ?? ultima.inicio),
+    startDate: fechaSchema(e.sesiones[0].inicio),
+    endDate: fechaSchema(ultima.fin ?? ultima.inicio),
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     image: e.cartel ? [`${SITIO.url}${e.cartel}`] : undefined,

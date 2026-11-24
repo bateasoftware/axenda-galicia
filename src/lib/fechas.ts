@@ -12,6 +12,26 @@ export const ultimoFin = (e: Evento) => {
 
 export const dia = (iso: string) => iso.slice(0, 10);
 
+/** Una sesión puede ir solo con el día ("2026-08-13"), sin hora: exposiciones, ferias, varios días… */
+export const sinHora = (iso: string) => iso.length <= 10;
+
+/** ¿El fin no es anterior al inicio? Si falta la hora en alguno, se compara solo el día. */
+export function finValido(inicio: string, fin: string): boolean {
+  if (sinHora(inicio) || sinHora(fin)) return dia(fin) >= dia(inicio);
+  return fin >= inicio;
+}
+
+/** Suma días a una fecha YYYY-MM-DD */
+export function sumarDias(fecha: string, dias: number): string {
+  const [y, m, d] = fecha.slice(0, 10).split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + dias)).toISOString().slice(0, 10);
+}
+
+/** ¿Ha terminado el evento? `ahora` es "YYYY-MM-DDTHH:MM"; si el fin no tiene hora, termina al acabar ese día */
+export function haTerminado(finISO: string, ahora: string): boolean {
+  return sinHora(finISO) ? finISO < dia(ahora) : finISO < ahora;
+}
+
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
@@ -90,6 +110,9 @@ export function desfaseMadrid(iso: string): string {
   return `+${String(n).padStart(2, "0")}:00`;
 }
 
+/** Fecha para schema.org: con hora y zona, o solo el día si no hay hora */
+export const fechaSchema = (iso: string) => (sinHora(iso) ? iso : conZona(iso));
+
 /** "2026-11-22T17:00" → "2026-11-22T17:00:00+01:00" (para schema.org) */
 export function conZona(iso: string): string {
   const local = iso.length > 10 ? iso : `${iso}T00:00`;
@@ -158,8 +181,24 @@ export function generarICS(e: Evento, url: string): string {
   const lugar = e.lugares.map((l) => [l.nombre, l.direccion].filter(Boolean).join(", ")).join(" / ");
   const lineas = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Axenda//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", ...VTIMEZONE_MADRID];
   e.sesiones.forEach((s, i) => {
-    // Sin hora de fin, se supone una duración de 2 horas
-    const fin = s.fin ?? sumarHoras(s.inicio, 2);
+    if (sinHora(s.inicio)) {
+      // Evento de día completo: DTEND es exclusivo (el día siguiente al último)
+      lineas.push(
+        "BEGIN:VEVENT",
+        `UID:${e.slug}-${i}@axenda`,
+        `DTSTAMP:${utcICS(e.fuente.recibido)}`,
+        `DTSTART;VALUE=DATE:${s.inicio.replace(/-/g, "")}`,
+        `DTEND;VALUE=DATE:${sumarDias(s.fin ?? s.inicio, 1).replace(/-/g, "")}`,
+        `SUMMARY:${esc(s.nota ? `${e.titulo} – ${s.nota}` : e.titulo)}`,
+        `LOCATION:${esc(`${lugar}, ${e.concello}`)}`,
+        `DESCRIPTION:${esc(`${e.resumen}\n${url}`)}`,
+        `URL:${url}`,
+        "END:VEVENT",
+      );
+      return;
+    }
+    // Sin hora de fin, se supone una duración de 2 horas (si el fin no tiene hora, dura hasta el final de ese día)
+    const fin = s.fin && !sinHora(s.fin) ? s.fin : s.fin ? `${s.fin}T23:59` : sumarHoras(s.inicio, 2);
     lineas.push(
       "BEGIN:VEVENT",
       `UID:${e.slug}-${i}@axenda`,

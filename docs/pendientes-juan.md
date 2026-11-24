@@ -2,7 +2,7 @@
 
 Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner claves y decidir. **No me pases claves por el chat.**
 
-Última actualización: modo sin costes (Turso con los carteles dentro y sin la API de Claude).
+Última actualización: panel con formulario por campos, cartel editable y gestión de publicados.
 
 ## Qué cuesta dinero y qué no
 
@@ -26,6 +26,17 @@ Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner cl
 - **Carteles sueltos (formulario, email):** llegan al panel `/admin` como **"✍️ Por completar"**, con el cartel y lo que escribió quien lo mandó. Rellenas título, fecha, lugar y categorías mirando el cartel. Son 1 o 2 minutos por cartel.
 - **Muchos carteles o un programa en PDF:** déjalos en `data/entrada/` y **pídeme a mí** (Claude Code) "extrae los carteles de data/entrada". Lo hago con tu suscripción, sin la API. Después ejecutas `npm run subir-pendientes` y los revisas en `/admin`.
 - **Fuentes automáticas** (Cultura de Galicia y agenda de Vigo): no usan IA, así que siguen igual. Solo el boletín del SERGAS (un PDF) necesita la IA; sin ella, lo extraigo yo cuando me lo pidas.
+
+## Cómo se usa el panel `/admin`
+
+- **Pendientes** (lo que llega): abre uno, rellena y pulsa **Publicar**. Sin hora, sin coordenadas: solo lo que sepas.
+  - **Cuándo:** elige el día. La hora es opcional. Si dura varios días, pon el último en «Hasta el día» y deja las horas vacías. «+ Añadir otro día u horario» para más sesiones.
+  - **Dónde:** escribe el nombre del sitio. Si es uno conocido, se pone su ubicación; si no, se usa el centro del concello (aproximada). Las coordenadas son opcionales, dentro de «Coordenadas».
+  - **Cartel:** si no tiene, «Añadir un cartel» sube una imagen (se reduce sola). Si ya tiene, «Cambiar el cartel».
+- **Publicados** (botón arriba, `/admin/publicados`): todos los eventos que se ven en la web, próximos y pasados. Entra en uno para **editarlo** (título, fechas, lugar, cartel…) o **retirarlo** de la web.
+  - La dirección de la página (`/evento/…`) no cambia al editar.
+  - Los 5 eventos iniciales viven en el repositorio (`data/eventos`). Salen marcados "Repositorio": al guardar cambios pasan a la base de datos y se editan desde ahí; al retirarlos se ocultan. No hay que tocar nada en GitHub.
+  - Retirar no borra: queda guardado como descartado.
 
 ## Ahora (todo gratis), en este orden
 

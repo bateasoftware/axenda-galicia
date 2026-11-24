@@ -53,7 +53,7 @@ Cuántos eventos:
 - Si no hay ningún evento, devuelve "eventos": [].
 
 Reglas de cada evento:
-- Fechas y horas como "YYYY-MM-DDTHH:MM" en 24 h. Si pone "8:30" como cierre tras abrir a las 10:30, es 20:30. Anótalo en "inferido". Si no hay hora, usa 00:00 y añade "hora" a "inferido".
+- Fechas y horas como "YYYY-MM-DDTHH:MM" en 24 h. Si pone "8:30" como cierre tras abrir a las 10:30, es 20:30. Anótalo en "inferido". Si el cartel no indica hora (exposiciones, ferias o eventos de varios días), usa solo el día "YYYY-MM-DD" en "inicio" y "fin"; no inventes horas ni pongas 00:00.
 - "slug": kebab-case corto, sin tildes, con lugar y año (p. ej. "magosto-panxon-2026").
 - "titulo" en castellano; "titulo_gl" con el original si está en gallego.
 - "resumen": 1-2 frases propias, sin copiar literalmente el texto.

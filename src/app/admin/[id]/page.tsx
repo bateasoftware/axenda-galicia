@@ -2,10 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import lugaresJSON from "../../../../data/lugares.json";
 import { almacen } from "@/lib/almacen";
-import { lugaresATexto, sesionesATexto } from "@/lib/admin/formulario";
 import { exigirAdmin } from "@/lib/admin/sesion";
+import { apoyoFormulario, valoresDe } from "@/lib/admin/valores";
 import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
 import { validarEvento } from "@/lib/validacion";
 import { descartar } from "../acciones";
@@ -97,41 +96,14 @@ async function Editor({ params }: Pick<PageProps<"/admin/[id]">, "params">) {
       </section>
 
       <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1fr)_260px]">
-        <FormularioRevision
-          id={p.id}
-          valores={{
-            slug: e.slug,
-            titulo: e.titulo,
-            titulo_gl: e.titulo_gl ?? "",
-            resumen: e.resumen,
-            sesiones: sesionesATexto(e.sesiones),
-            lugares: lugaresATexto(e.lugares),
-            concello: e.concello,
-            parroquia: e.parroquia ?? "",
-            organizadores: e.organizadores.join(", "),
-            categorias: e.categorias,
-            publico: e.publico ?? "",
-            precio: e.precio ?? "",
-            idioma: e.idioma,
-            inscripcion_url: e.inscripcion?.url ?? "",
-            inscripcion_telefono: e.inscripcion?.telefono ?? "",
-            inscripcion_email: e.inscripcion?.email ?? "",
-            inscripcion_hasta: e.inscripcion?.hasta ?? "",
-            extras: (e.extras ?? []).join("\n"),
-            inferido: (e.inferido ?? []).join("\n"),
-            recurrente: !!e.recurrente,
-            comercial: !!e.comercial,
-          }}
-          concellos={Object.keys(lugaresJSON.concellos)}
-          lugaresConocidos={lugaresJSON.lugares.map((l) => `${l.nombre} | ${l.lat}, ${l.lng}${l.aprox ? " | aprox" : ""}`)}
-        />
+        <FormularioRevision modo="pendiente" id={p.id} valores={valoresDe(e)} {...apoyoFormulario} cartelActual={p.cartel} />
         <aside className="order-first md:order-none">
           {p.cartel ? (
             <a href={p.cartel} target="_blank" className="block overflow-hidden rounded-2xl border border-[var(--linea)] bg-white">
               <Image src={p.cartel} alt={`Cartel: ${e.titulo}`} width={520} height={700} unoptimized className="h-auto w-full" />
             </a>
           ) : (
-            <p className="rounded-2xl border border-dashed border-[var(--linea)] p-4 text-sm text-[var(--gris)]">Sin cartel (importado o programa en PDF).</p>
+            <p className="rounded-2xl border border-dashed border-[var(--linea)] p-4 text-sm text-[var(--gris)]">Sin cartel. Puedes añadir una imagen en el formulario, en «Añadir un cartel».</p>
           )}
           <form action={descartar.bind(null, p.id)} className="mt-4">
             <button className="w-full rounded-full border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Descartar</button>

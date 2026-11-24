@@ -191,6 +191,41 @@ describe("cuerpoPR", () => {
   });
 });
 
+describe("almacenLocal: publicados y cartel", () => {
+  test("editar, cambiar el cartel y retirar un publicado", async () => {
+    const raiz = fs.mkdtempSync(path.join(os.tmpdir(), "axenda-"));
+    try {
+      fs.mkdirSync(path.join(raiz, "data", "eventos"), { recursive: true });
+      fs.writeFileSync(path.join(raiz, "data", "eventos", "prueba-2026.json"), JSON.stringify(evento()));
+      const a = almacenLocal(raiz);
+      assert.deepEqual((await a.publicadosConId()).map((x) => x.id), ["prueba-2026"]);
+      await a.guardarPublicado("prueba-2026", { ...evento(), titulo: "Cambiado" });
+      assert.equal((await a.publicado("prueba-2026"))?.evento.titulo, "Cambiado");
+      const url = await a.ponerCartel("prueba-2026", { datos: Buffer.from("x"), tipo: "image/jpeg" }, "publicado");
+      assert.equal(url, "/carteles/prueba-2026.jpg");
+      assert.ok(fs.existsSync(path.join(raiz, "public", "carteles", "prueba-2026.jpg")));
+      assert.equal((await a.publicado("prueba-2026"))?.evento.cartel, url);
+      await a.retirar("prueba-2026");
+      assert.equal((await a.publicadosConId()).length, 0);
+    } finally {
+      fs.rmSync(raiz, { recursive: true, force: true });
+    }
+  });
+
+  test("añadir un cartel a un pendiente que no lo tenía", async () => {
+    const raiz = fs.mkdtempSync(path.join(os.tmpdir(), "axenda-"));
+    try {
+      const a = almacenLocal(raiz);
+      const p = await a.crear({ evento: evento() });
+      assert.equal(p.cartel, undefined);
+      await a.ponerCartel(p.id, { datos: Buffer.from("x"), tipo: "image/jpeg" }, "pendiente");
+      assert.equal((await a.pendiente(p.id))?.cartel, `/admin/cartel/${p.id}`);
+    } finally {
+      fs.rmSync(raiz, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("normalizarCartel", () => {
   test("reduce a 1600 px, pasa a JPEG y quita los metadatos", async () => {
     const original = await sharp({ create: { width: 3000, height: 2000, channels: 3, background: "#c33" } })

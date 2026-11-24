@@ -31,7 +31,7 @@ export function fechaICS(valor: string, params: Record<string, string>): { iso: 
   const m = valor.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/);
   if (!m) return null;
   const [, y, mo, d, h, mi, , z] = m;
-  if (!h) return { iso: `${y}-${mo}-${d}T00:00`, sinHora: true };
+  if (!h) return { iso: `${y}-${mo}-${d}`, sinHora: true };
   if (z) return { iso: fechaHoraGalicia(new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi))), sinHora: false };
   // Con TZID se asume Europe/Madrid (la de todas nuestras fuentes); flotante también
   void params;
@@ -60,7 +60,7 @@ export function leerICS(texto: string): EventoICS[] {
         const d = new Date(`${fin.iso.slice(0, 10)}T00:00:00Z`);
         d.setUTCDate(d.getUTCDate() - 1);
         const ultimo = d.toISOString().slice(0, 10);
-        fin = ultimo > ini.iso.slice(0, 10) ? { iso: `${ultimo}T23:59`, sinHora: true } : null;
+        fin = ultimo > ini.iso.slice(0, 10) ? { iso: ultimo, sinHora: true } : null;
       }
       eventos.push({
         uid: p.UID?.valor ?? `${p.DTSTART!.valor}-${p.SUMMARY.valor}`,

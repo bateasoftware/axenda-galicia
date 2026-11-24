@@ -2,26 +2,9 @@
 
 import Script from "next/script";
 import { useState } from "react";
+import { MAX_BYTES_ARCHIVO, reducirImagen } from "@/lib/reducir-imagen";
 
-const MAX_BYTES = 4 * 1024 * 1024;
 const campo = "w-full rounded-xl border border-[var(--linea)] bg-white px-3 py-2.5 text-[15px]";
-
-/** Reduce las fotos grandes en el navegador (máx. 2000 px, JPEG) para no pasar de 4 MB */
-async function reducir(f: File): Promise<Blob> {
-  if (!f.type.startsWith("image/") || f.size < 1.5 * 1024 * 1024) return f;
-  try {
-    const bmp = await createImageBitmap(f);
-    const escala = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
-    const lienzo = document.createElement("canvas");
-    lienzo.width = Math.round(bmp.width * escala);
-    lienzo.height = Math.round(bmp.height * escala);
-    lienzo.getContext("2d")!.drawImage(bmp, 0, 0, lienzo.width, lienzo.height);
-    const blob = await new Promise<Blob | null>((r) => lienzo.toBlob(r, "image/jpeg", 0.85));
-    return blob ?? f;
-  } catch {
-    return f; // formatos que el navegador no sabe abrir (p. ej. HEIC fuera de Safari)
-  }
-}
 
 type Estado = { tipo: "inicial" } | { tipo: "enviando" } | { tipo: "ok"; eventos: number } | { tipo: "error"; motivo: string };
 
@@ -34,8 +17,8 @@ export default function FormularioEnvio({ turnstile }: { turnstile?: string }) {
     const datos = new FormData(form);
     const archivo = datos.get("archivo");
     if (archivo instanceof File && archivo.size) {
-      const reducido = await reducir(archivo);
-      if (reducido.size > MAX_BYTES) return setEstado({ tipo: "error", motivo: "El archivo pasa de 4 MB. Prueba con una foto o un PDF más ligero." });
+      const reducido = await reducirImagen(archivo);
+      if (reducido.size > MAX_BYTES_ARCHIVO) return setEstado({ tipo: "error", motivo: "El archivo pasa de 4 MB. Prueba con una foto o un PDF más ligero." });
       datos.set("archivo", reducido, archivo.name.replace(/\.\w+$/, reducido === archivo ? "$&" : ".jpg"));
     }
     setEstado({ tipo: "enviando" });

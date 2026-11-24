@@ -213,6 +213,63 @@ export function almacenLocal(raiz = process.cwd()): Almacen {
       borrarPendiente(id, { conCartel: true });
     },
 
+    async publicadosConId() {
+      if (!fs.existsSync(/*turbopackIgnore: true*/ EVENTOS)) return [];
+      return fs
+        .readdirSync(/*turbopackIgnore: true*/ EVENTOS)
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => ({ id: f.slice(0, -5), evento: leerJSON(path.join(EVENTOS, f)) as Evento }));
+    },
+
+    async publicado(id) {
+      const f = path.join(EVENTOS, `${id}.json`);
+      if (!/^[a-z0-9-]+$/.test(id) || !fs.existsSync(/*turbopackIgnore: true*/ f)) return null;
+      return { id, evento: leerJSON(f) as Evento };
+    },
+
+    async guardarPublicado(id, evento) {
+      if (!/^[a-z0-9-]+$/.test(id)) throw new Error("id no válido");
+      fs.writeFileSync(/*turbopackIgnore: true*/ path.join(EVENTOS, `${id}.json`), JSON.stringify({ ...evento, slug: id }, null, 2) + "\n");
+    },
+
+    async retirar(id) {
+      fs.rmSync(/*turbopackIgnore: true*/ path.join(EVENTOS, `${id}.json`), { force: true });
+    },
+
+    // En local los eventos de git son los mismos ficheros: no hay nada que copiar ni ocultar aparte
+    async adoptar(evento) {
+      return { id: evento.slug };
+    },
+    async retirarSlug(slug) {
+      fs.rmSync(/*turbopackIgnore: true*/ path.join(EVENTOS, `${slug}.json`), { force: true });
+    },
+    async slugsRetirados() {
+      return [];
+    },
+
+    async ponerCartel(id, cartel, estado) {
+      const nombre = `${id}${EXT[cartel.tipo]}`;
+      if (estado === "pendiente") {
+        const p = leer(id);
+        if (!p) throw new Error(`No existe el pendiente ${id}`);
+        const antes = ficheroCartel(leerJSON(path.join(PEND, `${id}.json`)));
+        fs.mkdirSync(/*turbopackIgnore: true*/ CARTELES_PEND, { recursive: true });
+        const rel = path.join("data", "pendientes", "carteles", nombre);
+        fs.writeFileSync(/*turbopackIgnore: true*/ path.join(raiz, rel), cartel.datos);
+        if (antes && antes !== path.join(raiz, rel) && antes.startsWith(CARTELES_PEND)) fs.rmSync(/*turbopackIgnore: true*/ antes, { force: true });
+        const internos = internosDe(id);
+        delete internos._imagen;
+        escribir(id, p.evento, { ...internos, _cartel: rel });
+        return `/admin/cartel/${id}`;
+      }
+      const e = await this.publicado(id);
+      if (!e) throw new Error(`No existe el evento ${id}`);
+      fs.mkdirSync(/*turbopackIgnore: true*/ PUBLICOS, { recursive: true });
+      fs.writeFileSync(/*turbopackIgnore: true*/ path.join(PUBLICOS, nombre), cartel.datos);
+      await this.guardarPublicado(id, { ...e.evento, cartel: `/carteles/${nombre}` });
+      return `/carteles/${nombre}`;
+    },
+
     async marcarDuplicados(id, duplicados) {
       const p = leer(id);
       if (!p) return;

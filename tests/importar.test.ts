@@ -107,7 +107,8 @@ describe("desdeICS", () => {
   });
   test("el borrador es válido salvo lo que hay que revisar", () => {
     assert.ok(validarEvento(a!.evento, null).ok);
-    assert.ok(c!.evento.inferido!.some((x) => x.startsWith("hora")));
+    // Un evento de día completo no lleva hora inventada: solo el día
+    assert.deepEqual(c!.evento.sesiones, [{ inicio: "2026-12-05" }]);
     assert.deepEqual(c!.evento.categorias, ["navidad", "mercadillo"]);
   });
 });

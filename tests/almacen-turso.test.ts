@@ -99,4 +99,57 @@ describe("almacenTurso", () => {
     assert.equal(eventos[0].duplicados, '["pendiente:x"]');
     assert.equal(JSON.parse(eventos[0].datos).slug, "prueba-2026");
   });
+
+  test("añadir o cambiar el cartel de un pendiente y de un publicado (id nuevo, el anterior se borra)", async () => {
+    const cliente = createClient({ url: ":memory:" });
+    const a = almacenTurso({ cliente: async () => cliente }); // sin Blob: el cartel va en la tabla carteles
+    const p = await a.crear({ evento: evento() }); // sin cartel
+    assert.equal(p.cartel, undefined);
+    const url1 = await a.ponerCartel(p.id, { datos: Buffer.from([1]), tipo: "image/jpeg" }, "pendiente");
+    assert.match(url1, /^\/cartel\/[0-9a-f-]{36}\.jpg$/);
+    assert.equal((await a.pendiente(p.id))?.cartel, url1);
+    const url2 = await a.ponerCartel(p.id, { datos: Buffer.from([2]), tipo: "image/jpeg" }, "pendiente");
+    assert.notEqual(url1, url2, "URL nueva: no se queda el cartel antiguo en la caché");
+    assert.equal((await cliente.execute("SELECT COUNT(*) n FROM carteles")).rows[0].n, 1, "el anterior se borró");
+
+    const r = await a.publicar(p.id, evento());
+    assert.equal((await a.publicado(p.id))?.evento.cartel, url2);
+    const url3 = await a.ponerCartel(p.id, { datos: Buffer.from([3]), tipo: "image/png" }, "publicado");
+    assert.match(url3, /\.png$/);
+    assert.equal((await a.publicado(p.id))?.evento.cartel, url3, "el evento publicado apunta al cartel nuevo");
+    assert.equal(r.slug, "prueba-2026");
+  });
+
+  test("ver, editar y retirar publicados; el slug no cambia", async () => {
+    const { a } = nuevo();
+    const p = await a.crear({ evento: evento() });
+    await a.publicar(p.id, evento());
+    const lista = await a.publicadosConId();
+    assert.deepEqual(lista.map((x) => x.id), [p.id]);
+    await a.guardarPublicado(p.id, { ...lista[0].evento, titulo: "Título nuevo" });
+    assert.equal((await a.publicado(p.id))?.evento.titulo, "Título nuevo");
+    assert.equal((await a.publicados())[0].titulo, "Título nuevo");
+
+    await a.retirar(p.id);
+    assert.equal(await a.publicado(p.id), null);
+    assert.equal((await a.publicados()).length, 0);
+    assert.deepEqual(await a.slugsRetirados(), ["prueba-2026"], "oculta también uno de data/eventos con ese slug");
+    assert.deepEqual((await a.cobertura()).map((c) => c.estado), ["descartado"]);
+  });
+
+  test("un evento de data/eventos se edita copiándolo a la base de datos y se oculta con retirarSlug", async () => {
+    const { a } = nuevo();
+    const delRepo = evento({ slug: "del-repo-2026", cartel: "/carteles/del-repo-2026.jpg" });
+    const { id } = await a.adoptar({ ...delRepo, titulo: "Editado" });
+    assert.equal((await a.publicado(id))?.evento.cartel, "/carteles/del-repo-2026.jpg");
+    assert.equal((await a.publicados())[0].titulo, "Editado");
+    await a.retirarSlug("otro-del-repo");
+    assert.deepEqual(await a.slugsRetirados(), ["otro-del-repo"]);
+    // Las marcas de "oculto" no cuentan como eventos en la cobertura
+    assert.deepEqual((await a.cobertura()).map((c) => c.estado), ["publicado"]);
+    // Y un pendiente descartado normal NO oculta nada
+    const p = await a.crear({ evento: evento({ slug: "pendiente-normal" }) });
+    await a.descartar(p.id);
+    assert.deepEqual(await a.slugsRetirados(), ["otro-del-repo"]);
+  });
 });

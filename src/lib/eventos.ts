@@ -29,15 +29,20 @@ function eventosEnFicheros(): Evento[] {
   return eventos;
 }
 
-async function eventosEnLaNube(): Promise<Evento[]> {
+/** Eventos de data/eventos (git), para el panel: los de la web pueden estar ocultos o sustituidos por uno editado */
+export function eventosDelRepositorio(): Evento[] {
+  return eventosEnFicheros();
+}
+
+async function eventosEnLaNube(): Promise<{ publicados: Evento[]; retirados: Set<string> }> {
   const remoto = almacenRemoto();
-  if (!remoto) return [];
+  if (!remoto) return { publicados: [], retirados: new Set() };
   try {
-    return await remoto.publicados();
+    return { publicados: await remoto.publicados(), retirados: new Set(await remoto.slugsRetirados()) };
   } catch (err) {
     // Si la base de datos falla, la web sigue con los JSON
     console.error(`[eventos] no se pudo leer ${remoto.tipo}:`, (err as Error).message);
-    return [];
+    return { publicados: [], retirados: new Set() };
   }
 }
 
@@ -48,9 +53,11 @@ export async function todosLosEventos(): Promise<Evento[]> {
   // stale ≥ 30 s y expire ≥ 5 min: así no cuenta como caché "corta" y las páginas siguen siendo estáticas.
   if (process.env.NODE_ENV === "development") cacheLife({ stale: 30, revalidate: 1, expire: 300 });
   else cacheLife("hours");
+  const nube = await eventosEnLaNube();
   const porSlug = new Map<string, Evento>();
-  for (const e of eventosEnFicheros()) porSlug.set(e.slug, e);
-  for (const e of await eventosEnLaNube()) porSlug.set(e.slug, e);
+  // Los de git, salvo los retirados desde el panel; los de la nube (editados o nuevos) ganan
+  for (const e of eventosEnFicheros()) if (!nube.retirados.has(e.slug)) porSlug.set(e.slug, e);
+  for (const e of nube.publicados) porSlug.set(e.slug, e);
   return [...porSlug.values()].sort((a, b) => primerInicio(a).localeCompare(primerInicio(b)));
 }
 

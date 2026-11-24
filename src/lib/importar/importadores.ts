@@ -68,7 +68,6 @@ export function desdeICS(e: EventoICS, fuente: Fuente, recibido = fechaHoraGalic
   const idioma = idiomaDe(`${e.titulo} ${e.descripcion ?? ""}`);
   const inferido = ["resumen", "categorías"];
   if (idioma === "gl") inferido.push("título en castellano (está en gallego)");
-  if (e.sinHora) inferido.push("hora (la fuente no la indica)");
   if (u.lugar.aprox) inferido.push("coordenadas");
   if (e.recurrente) inferido.push("solo la primera fecha de una serie");
   return {
@@ -94,7 +93,7 @@ export function desdeICS(e: EventoICS, fuente: Fuente, recibido = fechaHoraGalic
         ...(fuente.atribucion ? { atribucion: fuente.atribucion } : {}),
       },
       inferido,
-      confianza: e.sinHora ? 0.5 : 0.7,
+      confianza: 0.7,
     },
   };
 }
@@ -116,7 +115,7 @@ export function desdeVigo(f: FilaVigo, fuente: Fuente, recibido = fechaHoraGalic
   const u = ubicar(`${f.direccion ?? ""} - Vigo`) ?? ubicar("Vigo")!;
   const lugar = f.direccion ? { ...u.lugar, nombre: f.direccion.split(/[.,]/)[0].trim().slice(0, 80) || "Vigo" } : u.lugar;
   const cats = categoriasDe(f.titulo);
-  const fin = f.fecha_fin && f.fecha_fin > f.fecha_inicio ? `${f.fecha_fin}T23:59` : undefined;
+  const fin = f.fecha_fin && f.fecha_fin > f.fecha_inicio ? f.fecha_fin : undefined;
   const largo = /program|ciclo|xornadas|jornadas|exposici/i.test(f.titulo);
   return {
     uid: String(f.id),
@@ -124,7 +123,7 @@ export function desdeVigo(f: FilaVigo, fuente: Fuente, recibido = fechaHoraGalic
       slug: slugDe(f.titulo, f.fecha_inicio),
       titulo: f.titulo,
       resumen: resumenPropio(cats, lugar.nombre, "Vigo"),
-      sesiones: [{ inicio: `${f.fecha_inicio}T00:00`, ...(fin ? { fin } : {}) }],
+      sesiones: [{ inicio: f.fecha_inicio, ...(fin ? { fin } : {}) }],
       lugares: [lugar],
       concello: "Vigo",
       organizadores: ["Concello de Vigo"],
@@ -138,8 +137,8 @@ export function desdeVigo(f: FilaVigo, fuente: Fuente, recibido = fechaHoraGalic
         url: fuente.url,
         ...(fuente.atribucion ? { atribucion: fuente.atribucion } : {}),
       },
-      inferido: ["hora (la fuente no la indica)", "resumen", "categorías", "coordenadas", ...(largo ? ["es un programa o exposición: ¿publicar o separar actos?"] : [])],
-      confianza: 0.5,
+      inferido: ["resumen", "categorías", "coordenadas", ...(largo ? ["es un programa o exposición: ¿publicar o separar actos?"] : [])],
+      confianza: 0.6,
     },
   };
 }

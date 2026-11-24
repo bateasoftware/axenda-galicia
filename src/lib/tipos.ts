@@ -1,6 +1,7 @@
 // Modelo de datos de un evento. Es la única fuente de verdad: de aquí salen los tipos
 // de TypeScript, la validación de data/eventos y el formato que devuelve el extractor.
 import { z } from "zod";
+import { finValido } from "./fechas";
 
 // Mensajes de error de validación en castellano
 z.config(z.locales.es());
@@ -21,15 +22,16 @@ export const LISTA_CATEGORIAS = [
 ] as const;
 
 const RE_FECHA_HORA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const RE_FECHA_O_HORA = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;
 const RE_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const RE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // Forma "plana" (solo tipos, sin formatos): es la que se manda al modelo como
 // formato de salida, porque los formatos estructurados no admiten todas las reglas.
 export const SesionBase = z.object({
-  /** ISO local sin zona, p. ej. "2026-11-22T17:00" (hora de Galicia) */
-  inicio: z.string().describe("YYYY-MM-DDTHH:MM, hora local de Galicia"),
-  fin: z.string().optional().describe("YYYY-MM-DDTHH:MM"),
+  /** ISO local sin zona, p. ej. "2026-11-22T17:00" (hora de Galicia), o solo el día "2026-11-22" si no tiene hora */
+  inicio: z.string().describe("YYYY-MM-DDTHH:MM, hora local de Galicia. Solo YYYY-MM-DD si el cartel no indica hora"),
+  fin: z.string().optional().describe("YYYY-MM-DDTHH:MM, o solo YYYY-MM-DD si no hay hora (último día de un evento de varios días)"),
   /** Qué pasa en esa sesión, si el cartel trae programa por horas */
   nota: z.string().optional(),
 });
@@ -100,10 +102,11 @@ export const EventoBase = z.object({
 
 // Forma estricta: la que deben cumplir los eventos publicados.
 const fechaHora = z.string().regex(RE_FECHA_HORA, "debe ser YYYY-MM-DDTHH:MM");
+const fechaOHora = z.string().regex(RE_FECHA_O_HORA, "debe ser YYYY-MM-DD o YYYY-MM-DDTHH:MM");
 
 export const SesionSchema = z
-  .strictObject({ ...SesionBase.shape, inicio: fechaHora, fin: fechaHora.optional() })
-  .refine((s) => !s.fin || s.fin >= s.inicio, { message: "fin es anterior a inicio", path: ["fin"] });
+  .strictObject({ ...SesionBase.shape, inicio: fechaOHora, fin: fechaOHora.optional() })
+  .refine((s) => !s.fin || finValido(s.inicio, s.fin), { message: "fin es anterior a inicio", path: ["fin"] });
 
 export const LugarSchema = z.strictObject({
   ...LugarBase.shape,
