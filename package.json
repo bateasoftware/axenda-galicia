@@ -10,7 +10,8 @@
     "extraer": "tsx --env-file-if-exists=.env.local scripts/extraer.ts",
     "publicar": "tsx scripts/publicar.ts",
     "validar": "tsx scripts/validar.ts",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "revisar-fuentes": "tsx scripts/revisar-fuentes.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.13.0",
