@@ -15,6 +15,7 @@ import sharp from "sharp";
 const RAIZ = process.cwd();
 const ORIGINAL = path.join(RAIZ, "marca", "axenda-logo-original.webp");
 const CREMA = "#fcfaf6";
+const AZUL = { r: 1, g: 35, b: 64 }; // fondo del icono
 const UMBRAL = 12; // opacidad mínima para contar como "hay contenido"
 
 async function main() {
@@ -64,8 +65,23 @@ async function main() {
       { input: interior, left: Math.round((lado - ancho) / 2), top: Math.round((lado - alto) / 2) },
     ]);
   };
+  // iOS pone su propio recuadro redondeado y no admite transparencia: el icono tiene que llenar todo el cuadrado.
+  // Se recorta un poco el borde (las esquinas redondeadas) y se completa con el azul del fondo.
+  const sangrado = async (lado: number) => {
+    const meta = await sharp(iconoBuf).metadata();
+    const recorte = Math.round(meta.height! * 0.07);
+    const ancho = meta.width! - 2 * recorte;
+    const alto = meta.height! - 2 * recorte;
+    const centro = await sharp(iconoBuf).extract({ left: recorte, top: recorte, width: ancho, height: alto }).png().toBuffer();
+    // Primero se compone y luego se redimensiona (sharp redimensiona antes de componer)
+    const cuadrado = await sharp({ create: { width: ancho, height: ancho, channels: 4, background: { ...AZUL, alpha: 1 } } })
+      .composite([{ input: centro, left: 0, top: Math.round((ancho - alto) / 2) }])
+      .png()
+      .toBuffer();
+    return sharp(cuadrado).flatten({ background: AZUL }).resize(lado, lado);
+  };
   await guardar(await cuadrado(256, 0.02), "src/app/icon.png"); // favicon y pestañas
-  await guardar(await cuadrado(180, 0.14, CREMA), "src/app/apple-icon.png"); // iOS no admite transparencia
+  await guardar(await sangrado(180), "src/app/apple-icon.png"); // pantalla de inicio de iOS
   await guardar(await cuadrado(192, 0.02), "public/icon-192.png");
   await guardar(await cuadrado(512, 0.02), "public/icon-512.png");
   await guardar(await cuadrado(512, 0.22, CREMA), "public/icon-maskable-512.png"); // zona segura de los iconos adaptables
