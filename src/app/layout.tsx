@@ -39,7 +39,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="border-t border-[var(--linea)] py-8 text-center text-sm text-[var(--gris)]">
           <p>{SITIO.nombre} · Agenda de Val Miñor y Vigo · Versión beta</p>
           <p className="mt-1">
-            ¿Organizas algo? <Link href="/enviar" className="underline">Mándanos el cartel</Link>
+            ¿Organizas algo? <Link href="/enviar" className="underline">Mándanos el cartel</Link> ·{" "}
+            <Link href="/widget" className="underline">La agenda en tu web</Link>
           </p>
         </footer>
         <RegistroSW />

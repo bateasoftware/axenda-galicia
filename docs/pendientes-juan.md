@@ -2,7 +2,7 @@
 
 Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisiones. Cada punto dice **qué** hacer, **por qué**, **dónde** y **qué me tienes que devolver**. Las variables de entorno van en Vercel (Settings → Environment Variables) y en tu `.env.local` para probar en local. **No me pases claves por el chat.**
 
-Última actualización: bloque 6 (panel de revisión).
+Última actualización: bloque 7 (organizadores, formulario y widget).
 
 ## Bloque 1 · Fuentes
 
@@ -139,3 +139,17 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
   - Si vino por WhatsApp, se le manda solo (con la plantilla del bloque 5 si pasaron más de 24 h).
   - Si vino por email o el formulario, el panel te prepara el mensaje para copiar o responder.
   - Su contacto se borra en cuanto se publica o se descarta el evento.
+
+## Bloque 7 · Organizadores, formulario y widget
+
+- [ ] **Formulario de `/enviar`:** funciona en cuanto haya `ANTHROPIC_API_KEY` y Supabase en Vercel.
+  - Sin Supabase abre un PR en GitHub, y el email de aviso no se guarda.
+  - Lleva un campo trampa para bots y un límite de envíos por IP.
+- [ ] **(Opcional) Antispam Cloudflare Turnstile**, si llega spam:
+  - **Dónde:** https://dash.cloudflare.com → *Turnstile* → *Add widget*. Dominio: el de la web. Modo *Managed*.
+  - **Variables en Vercel:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (site key) y `TURNSTILE_SECRET_KEY` (secret).
+  - **Devuélveme:** nada.
+- [ ] **Difundir el widget** (`/widget`) entre hoteles, campings, casas rurales, asociaciones y concellos.
+  - **Por qué:** trae enlaces y visitas, y es la base de la cuota mensual de `docs/vision.md`.
+  - **Devuélveme:** los primeros sitios que lo pongan, para seguirlos en la cobertura.
+- [ ] **Compartir la página de cada organizador** (`/organizador/<nombre>`) cuando publiques sus eventos. El panel ya te da el enlace al evento.

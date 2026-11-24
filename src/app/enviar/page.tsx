@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SITIO } from "@/lib/sitio";
+import FormularioEnvio from "./FormularioEnvio";
 
 export const metadata: Metadata = {
   title: "Enviar un evento",
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 
 export default function Enviar() {
   const asunto = encodeURIComponent("Nuevo evento para la agenda");
+  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMERO?.replace(/\D/g, "");
   const cuerpo = encodeURIComponent("Adjunto el cartel.\n\nQué: \nCuándo: \nDónde: \nOrganiza: \nWeb o contacto: \n");
   return (
     <div className="max-w-2xl">
@@ -31,12 +33,29 @@ export default function Enviar() {
           </li>
         ))}
       </ol>
-      <div className="mt-8 flex flex-wrap gap-3">
-        <a href={`mailto:${SITIO.emailEnvio}?subject=${asunto}&body=${cuerpo}`} className="rounded-full bg-[var(--mar)] px-5 py-2.5 font-medium text-white hover:opacity-90">
-          ✉️ Enviar por email
-        </a>
-        <span className="rounded-full border border-dashed border-[var(--linea)] px-5 py-2.5 text-[var(--gris)]">💬 WhatsApp: próximamente</span>
+      <h2 className="mt-10 font-display text-2xl">Envíalo aquí</h2>
+      <div className="mt-3">
+        <FormularioEnvio turnstile={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined} />
       </div>
+      <h2 className="mt-10 font-display text-2xl">O por donde te venga mejor</h2>
+      <div className="mt-3 flex flex-wrap gap-3">
+        {whatsapp ? (
+          <a
+            href={`https://wa.me/${whatsapp}?text=${encodeURIComponent("Hola, os mando el cartel de un evento:")}`}
+            className="rounded-full bg-[#1f8f4e] px-5 py-2.5 font-medium text-white hover:opacity-90"
+          >
+            💬 WhatsApp: +{whatsapp}
+          </a>
+        ) : (
+          <span className="rounded-full border border-dashed border-[var(--linea)] px-5 py-2.5 text-[var(--gris)]">💬 WhatsApp: próximamente</span>
+        )}
+        <a href={`mailto:${SITIO.emailEnvio}?subject=${asunto}&body=${cuerpo}`} className="rounded-full border border-[var(--linea)] bg-white px-5 py-2.5 font-medium hover:border-[var(--tinta)]">
+          ✉️ Por email
+        </a>
+      </div>
+      <p className="mt-6 text-sm text-[var(--gris)]">
+        ¿Tienes web? Pon la agenda de tu zona con el <a href="/widget" className="underline">widget gratuito</a>.
+      </p>
     </div>
   );
 }

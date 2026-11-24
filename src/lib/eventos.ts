@@ -43,8 +43,9 @@ async function eventosEnSupabase(): Promise<Evento[]> {
 export async function todosLosEventos(): Promise<Evento[]> {
   "use cache";
   cacheTag(ETIQUETA_EVENTOS);
-  // En desarrollo se relee enseguida para ver al momento los JSON editados
-  if (process.env.NODE_ENV === "development") cacheLife("seconds");
+  // En desarrollo se revalida al segundo para ver enseguida los JSON editados (con la recarga siguiente).
+  // stale ≥ 30 s y expire ≥ 5 min: así no cuenta como caché "corta" y las páginas siguen siendo estáticas.
+  if (process.env.NODE_ENV === "development") cacheLife({ stale: 30, revalidate: 1, expire: 300 });
   else cacheLife("hours");
   const porSlug = new Map<string, Evento>();
   for (const e of eventosEnFicheros()) porSlug.set(e.slug, e);
