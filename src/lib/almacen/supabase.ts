@@ -35,14 +35,15 @@ export function supabaseConfigurado(env: Record<string, string | undefined> = pr
 export function almacenSupabase({ url, clave }: { url: string; clave: string }): Almacen {
   const base = url.replace(/\/$/, "");
   const urlPublica = (ruta: string) => `${base}/storage/v1/object/public/${BUCKET}/${ruta}`;
+  // Claves antiguas (JWT "service_role") van también como Bearer; las nuevas (sb_secret_…) solo como apikey
+  const claves: Record<string, string> = { apikey: clave, ...(clave.startsWith("eyJ") ? { Authorization: `Bearer ${clave}` } : {}) };
 
   async function rest<T>(ruta: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(`${base}/rest/v1/${ruta}`, {
       ...init,
       cache: "no-store",
       headers: {
-        apikey: clave,
-        Authorization: `Bearer ${clave}`,
+        ...claves,
         "Content-Type": "application/json",
         Prefer: "return=representation",
         ...init.headers,
@@ -113,7 +114,7 @@ export function almacenSupabase({ url, clave }: { url: string; clave: string }):
         const ruta = `${fila.id}.${EXT[cartel.tipo]}`;
         const res = await fetch(`${base}/storage/v1/object/${BUCKET}/${ruta}`, {
           method: "POST",
-          headers: { apikey: clave, Authorization: `Bearer ${clave}`, "Content-Type": cartel.tipo, "x-upsert": "true" },
+          headers: { ...claves, "Content-Type": cartel.tipo, "x-upsert": "true" },
           body: new Uint8Array(cartel.datos),
         });
         if (!res.ok) throw new ErrorSupabase(res.status, `Storage: ${(await res.text()).slice(0, 200)}`);

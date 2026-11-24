@@ -10,13 +10,13 @@ import MapaEvento from "./MapaEvento";
 import AvisoPasado from "./AvisoPasado";
 import type { Evento } from "@/lib/tipos";
 
-export function generateStaticParams() {
-  return todosLosEventos().map((e) => ({ slug: e.slug }));
+export async function generateStaticParams() {
+  return (await todosLosEventos()).map((e) => ({ slug: e.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/evento/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const e = eventoPorSlug(slug);
+  const e = await eventoPorSlug(slug);
   if (!e) return {};
   const cuando = fechaLarga(primerInicio(e));
   return {
@@ -50,7 +50,7 @@ function oferta(e: Evento, url: string) {
 
 export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]">) {
   const { slug } = await params;
-  const e = eventoPorSlug(slug);
+  const e = await eventoPorSlug(slug);
   if (!e) notFound();
 
   const url = `${SITIO.url}/evento/${e.slug}`;

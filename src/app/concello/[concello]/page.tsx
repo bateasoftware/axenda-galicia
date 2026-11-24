@@ -4,13 +4,13 @@ import { notFound } from "next/navigation";
 import { concellos, todosLosEventos } from "@/lib/eventos";
 import Explorador from "@/components/Explorador";
 
-export function generateStaticParams() {
-  return concellos().map((c) => ({ concello: c.slug }));
+export async function generateStaticParams() {
+  return (await concellos()).map((c) => ({ concello: c.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/concello/[concello]">): Promise<Metadata> {
   const { concello } = await params;
-  const c = concellos().find((x) => x.slug === concello);
+  const c = (await concellos()).find((x) => x.slug === concello);
   if (!c) return {};
   return {
     title: `Qué hacer en ${c.nombre}: agenda de eventos`,
@@ -21,9 +21,9 @@ export async function generateMetadata({ params }: PageProps<"/concello/[concell
 
 export default async function PaginaConcello({ params }: PageProps<"/concello/[concello]">) {
   const { concello } = await params;
-  const c = concellos().find((x) => x.slug === concello);
+  const c = (await concellos()).find((x) => x.slug === concello);
   if (!c) notFound();
-  const eventos = todosLosEventos().filter((e) => e.concello === c.nombre);
+  const eventos = (await todosLosEventos()).filter((e) => e.concello === c.nombre);
   return (
     <>
       <Link href="/concellos" className="text-sm text-[var(--gris)] hover:underline">← Concellos</Link>

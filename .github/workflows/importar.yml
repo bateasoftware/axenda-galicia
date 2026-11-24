@@ -1,0 +1,27 @@
+# Importación diaria de las fuentes automáticas (data/fuentes.json) a Supabase como PENDIENTES.
+# Se activa creando la variable IMPORTAR_ACTIVO=true y los secretos (ver docs/pendientes-juan.md, bloque 5).
+name: Importar eventos
+
+on:
+  schedule:
+    - cron: "30 5 * * *" # 6:30 en invierno, 7:30 en verano (hora de Galicia)
+  workflow_dispatch:
+
+jobs:
+  importar:
+    if: ${{ vars.IMPORTAR_ACTIVO == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Importar
+        run: npm run importar
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

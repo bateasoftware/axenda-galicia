@@ -2,8 +2,8 @@ import { todosLosEventos } from "@/lib/eventos";
 import { SITIO } from "@/lib/sitio";
 import Explorador from "@/components/Explorador";
 
-export default function Inicio() {
-  const eventos = todosLosEventos();
+export default async function Inicio() {
+  const eventos = await todosLosEventos();
   return (
     <>
       <div className="mb-6">
