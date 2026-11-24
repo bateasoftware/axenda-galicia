@@ -32,12 +32,16 @@ function peticion({ clave = SECRETO, imagen, canal }: { clave?: string | null; i
 }
 
 describe("POST /api/entrada", () => {
-  test("503 si falta configuración", async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+  test("503 si en Vercel no hay dónde guardar (sin base de datos ni GitHub)", async () => {
+    const antes = { VERCEL: process.env.VERCEL, GITHUB_TOKEN: process.env.GITHUB_TOKEN };
+    process.env.VERCEL = "1";
+    delete process.env.GITHUB_TOKEN;
     try {
       assert.equal((await POST(peticion())).status, 503);
     } finally {
-      process.env.ANTHROPIC_API_KEY = "x";
+      if (antes.VERCEL === undefined) delete process.env.VERCEL;
+      else process.env.VERCEL = antes.VERCEL;
+      process.env.GITHUB_TOKEN = antes.GITHUB_TOKEN;
     }
   });
 

@@ -6,6 +6,7 @@ import lugaresJSON from "../../../../data/lugares.json";
 import { almacen } from "@/lib/almacen";
 import { lugaresATexto, sesionesATexto } from "@/lib/admin/formulario";
 import { exigirAdmin } from "@/lib/admin/sesion";
+import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
 import { validarEvento } from "@/lib/validacion";
 import { descartar } from "../acciones";
 import EnlaceDuplicado from "../EnlaceDuplicado";
@@ -66,7 +67,13 @@ async function Editor({ params }: Pick<PageProps<"/admin/[id]">, "params">) {
             <p className="mt-1">Si es el mismo evento, descarta este (o completa el publicado si trae algo nuevo).</p>
           </div>
         )}
-        {e.confianza < 0.8 && <p className="rounded-xl border border-amber-200 bg-amber-50 p-3">⚠ Confianza baja: revisa fecha, hora y lugar con el cartel.</p>}
+        {e.inferido?.includes(MARCA_POR_COMPLETAR) && (
+          <p className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+            ✍️ Llegó sin extraer (no está la API de Claude). Rellena título, resumen, sesiones, lugar, concello y categorías mirando el cartel. Lo que te
+            escribieron está abajo en «Deducido»: bórralo al terminar (no se publica nunca).
+          </p>
+        )}
+        {e.confianza < 0.8 && !e.inferido?.includes(MARCA_POR_COMPLETAR) && <p className="rounded-xl border border-amber-200 bg-amber-50 p-3">⚠ Confianza baja: revisa fecha, hora y lugar con el cartel.</p>}
         {e.inferido?.length ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
             <p className="font-medium">⚠ Deducido, no leído literalmente:</p>

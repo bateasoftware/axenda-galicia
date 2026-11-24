@@ -7,21 +7,21 @@
  *      npm run migrar-a-supabase -- --simular   → solo cuenta lo que copiaría
  *   4. Comprueba en /admin y quita las variables de Turso (en Vercel y en .env.local): desde ahí se usa Supabase.
  *
- * Los carteles se quedan en Vercel Blob (mantén BLOB_READ_WRITE_TOKEN o, al menos, el almacén de Blob).
+ * Los carteles guardados en Turso se suben al bucket "carteles" de Supabase; los de Vercel Blob se quedan donde están.
  */
-import { almacenTurso, tursoConfigurado } from "../src/lib/almacen";
+import { almacenTursoDesdeEnv, tursoConfigurado } from "../src/lib/almacen";
 import { importarEnSupabase, supabaseConfigurado } from "../src/lib/almacen/supabase";
-import { clienteTurso, subirCartelBlob } from "../src/lib/almacen/turso";
 
 async function main() {
-  if (!tursoConfigurado()) return console.log("Faltan TURSO_DATABASE_URL y BLOB_READ_WRITE_TOKEN en .env.local.");
+  if (!tursoConfigurado()) return console.log("Falta TURSO_DATABASE_URL (y TURSO_AUTH_TOKEN) en .env.local.");
   if (!supabaseConfigurado()) return console.log("Faltan SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en .env.local.");
-  const turso = almacenTurso({ cliente: () => clienteTurso(), subirCartel: subirCartelBlob(process.env.BLOB_READ_WRITE_TOKEN!) });
+  const turso = almacenTursoDesdeEnv();
   const { eventos, contactos } = await turso.exportar();
   const cuenta = (e: string) => eventos.filter((x) => x.estado === e).length;
   console.log(`Turso: ${eventos.length} eventos (${cuenta("publicado")} publicados, ${cuenta("pendiente")} pendientes, ${cuenta("descartado")} descartados) y ${contactos.length} contactos.`);
   if (process.argv.includes("--simular")) return console.log("Simulación: no se ha copiado nada.");
-  await importarEnSupabase({ url: process.env.SUPABASE_URL!, clave: process.env.SUPABASE_SERVICE_ROLE_KEY! }, eventos, contactos);
+  const destino = { url: process.env.SUPABASE_URL!, clave: process.env.SUPABASE_SERVICE_ROLE_KEY! };
+  await importarEnSupabase(destino, eventos, contactos, (id) => turso.cartel(id));
   console.log("✓ Copiado a Supabase. Revisa /admin y, si está bien, quita las variables de Turso para pasar a usar Supabase.");
 }
 

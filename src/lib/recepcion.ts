@@ -7,6 +7,7 @@ import { extraer } from "./extraccion";
 import { clienteGitHub } from "./github";
 import { normalizarCartel } from "./imagen";
 import { buscadorDuplicados } from "./duplicados";
+import { extraerSinIA } from "./sin-ia";
 
 export class ArchivoNoValido extends Error {}
 
@@ -26,19 +27,22 @@ export async function prepararArchivo(datos: Buffer): Promise<{ archivo: NonNull
 /**
  * Dónde se guarda lo recibido:
  *  - "almacen": Turso o Supabase si están configurados; en local (fuera de Vercel) sin GitHub, ficheros en data/pendientes
- *  - "github": un pull request por envío (Vercel sin base de datos)
- *  - null: falta configuración (la clave de la IA o un destino)
+ *  - "github": un pull request por envío (Vercel sin base de datos; necesita la API de Claude)
+ *  - null: no hay dónde guardarlo
+ * Sin ANTHROPIC_API_KEY también se recibe: se guarda "por completar" para rellenarlo a mano.
  */
 export function destinoConfigurado(env: Record<string, string | undefined> = process.env): "almacen" | "github" | null {
-  if (!env.ANTHROPIC_API_KEY) return null;
-  const github = !!(env.GITHUB_TOKEN && env.GITHUB_REPO);
+  const github = !!(env.GITHUB_TOKEN && env.GITHUB_REPO && env.ANTHROPIC_API_KEY);
   if (remotoConfigurado(env) || (almacenDisponible(env) && !github)) return "almacen";
   return github ? "github" : null;
 }
 
+/** ¿Se extraen los datos con la API de Claude (de pago) o se dejan para completarlos a mano? */
+export const conIA = (env: Record<string, string | undefined> = process.env) => !!env.ANTHROPIC_API_KEY;
+
 /** Procesa un envío en el destino configurado */
 export async function recibir(entrada: Entrada, env: Record<string, string | undefined> = process.env): Promise<ResultadoEntrada> {
-  const extraerConIA = (e: Parameters<typeof extraer>[0]) => extraer(e);
+  const extraerConIA = conIA(env) ? (e: Parameters<typeof extraer>[0]) => extraer(e) : extraerSinIA;
   const destino = destinoConfigurado(env);
   if (destino === "almacen") {
     const a = almacen(env);

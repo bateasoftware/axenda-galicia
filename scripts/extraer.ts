@@ -46,6 +46,15 @@ function fechaDeNombre(nombre: string, mtime: Date): string {
 }
 
 async function main() {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.log(`Sin ANTHROPIC_API_KEY (la API de Claude es de pago) no se puede extraer automáticamente.
+
+Alternativa sin coste: abre Claude Code en este proyecto y pídele
+  "extrae los carteles de data/entrada"
+(sigue las instrucciones de AGENTS.md: deja los pendientes en data/pendientes/).
+Después: npm run subir-pendientes  → y revísalos en /admin.`);
+    return;
+  }
   const client = new Anthropic();
   const destino = almacen();
   fs.mkdirSync(ENTRADA, { recursive: true });

@@ -10,11 +10,11 @@ Agenda de eventos de Val Miñor y Vigo (y, más adelante, de toda Galicia). Es u
 - **Leaflet + OpenStreetMap**: mapa sin coste ni API key.
 - **Claude API**: extracción de datos de los carteles.
 - **Datos (fase 1)**: un JSON por evento en `data/eventos/`, con git como CMS. Cada push a `main` despliega.
-- **Datos (fase 2)**: Turso (libSQL) para pendientes y publicados desde el panel, y Vercel Blob para los carteles. Hay migración preparada a Supabase (`npm run migrar-a-supabase`).
+- **Datos (fase 2)**: Turso (libSQL) para pendientes, publicados desde el panel y carteles. Hay migración preparada a Supabase (`npm run migrar-a-supabase`).
 
 ## Cómo entran los eventos
 
-Todo entra como **pendiente** y una persona lo publica desde el panel `/admin`. Nada se publica solo.
+Todo entra como **pendiente** y una persona lo publica desde el panel `/admin`. Nada se publica solo. Con la API de Claude (`ANTHROPIC_API_KEY`, de pago) los datos se extraen solos; sin ella, llegan "por completar" y se rellenan en el panel, o se le pide a Claude Code que los extraiga (`AGENTS.md`) y se suben con `npm run subir-pendientes`.
 
 | Canal | Cómo | Dónde se configura |
 |---|---|---|
@@ -26,7 +26,7 @@ Todo entra como **pendiente** y una persona lo publica desde el panel `/admin`. 
 
 Un cartel da un evento y un programa (Navidad, fiestas, boletín) da uno por acto. Lo repetido se detecta: mismo archivo, mismo evento de la misma fuente, o mismo día, concello y título parecido. La estrategia de fuentes está en [`docs/fuentes.md`](docs/fuentes.md) y lo que falta configurar en [`docs/pendientes-juan.md`](docs/pendientes-juan.md).
 
-**Dónde se guardan:** con Turso (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`) y Vercel Blob (`BLOB_READ_WRITE_TOKEN`), pendientes y publicados van a Turso y los carteles a Blob; las tablas se crean solas (`turso/esquema.sql`). También funciona con Supabase (`supabase/esquema.sql`), y `npm run migrar-a-supabase` copia todo de uno a otro. Sin base de datos, en local se usan `data/pendientes/` y `data/eventos/`, con git como CMS. La web lee siempre los JSON de `data/eventos/` y, si está configurado, lo publicado en la base de datos.
+**Dónde se guardan:** con Turso (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`), pendientes, publicados y carteles van a Turso (los carteles se sirven en `/cartel/<id>.jpg`); las tablas se crean solas (`turso/esquema.sql`). También funciona con Supabase (`supabase/esquema.sql`), y `npm run migrar-a-supabase` copia todo de uno a otro. Sin base de datos, en local se usan `data/pendientes/` y `data/eventos/`, con git como CMS. La web lee siempre los JSON de `data/eventos/` y, si está configurado, lo publicado en la base de datos.
 
 ## Flujo en local
 

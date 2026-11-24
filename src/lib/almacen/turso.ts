@@ -1,4 +1,5 @@
-// Almacén en Turso (libSQL/SQLite) con los carteles en Vercel Blob.
+// Almacén en Turso (libSQL/SQLite). Los carteles se guardan en la propia base de datos (tabla carteles)
+// y se sirven en /cartel/<id>.jpg; opcionalmente, en Vercel Blob si está BLOB_READ_WRITE_TOKEN.
 // Misma interfaz y mismo formato de datos que Supabase: el evento completo va en "datos" (JSON),
 // así que migrar es copiar filas (npm run migrar-a-supabase).
 import { randomUUID } from "node:crypto";
@@ -28,6 +29,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS eventos_slug_publicado ON eventos (slug) WHERE
 CREATE INDEX IF NOT EXISTS eventos_estado ON eventos (estado, creado);
 CREATE INDEX IF NOT EXISTS eventos_hash ON eventos (hash);
 CREATE INDEX IF NOT EXISTS eventos_origen ON eventos (id_fuente, uid);
+CREATE TABLE IF NOT EXISTS carteles (
+  id     TEXT PRIMARY KEY,
+  tipo   TEXT NOT NULL,
+  datos  BLOB NOT NULL,
+  creado TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS contactos (
   evento_id TEXT PRIMARY KEY,
   canal     TEXT NOT NULL CHECK (canal IN ('whatsapp', 'email')),
@@ -49,8 +56,11 @@ export function subirCartelBlob(token: string): SubirCartel {
 }
 
 export function tursoConfigurado(env: Record<string, string | undefined> = process.env): boolean {
-  return !!(env.TURSO_DATABASE_URL && env.BLOB_READ_WRITE_TOKEN);
+  return !!env.TURSO_DATABASE_URL;
 }
+
+/** Ruta pública de un cartel guardado en Turso */
+export const rutaCartelTurso = (id: string, tipo: ImagenCartel["tipo"]) => `/cartel/${id}.${EXT[tipo]}`;
 
 /** Cliente HTTP de Turso (sin módulos nativos: funciona igual en Vercel y en local) */
 export async function clienteTurso(env: Record<string, string | undefined> = process.env): Promise<Client> {
@@ -75,9 +85,11 @@ const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "
 const CAMPOS = "id, slug, estado, datos, hash, cartel_url, duplicados, creado, actualizado, publicado";
 const aFila = (r: Row) => r as unknown as FilaEvento;
 
-export function almacenTurso({ cliente, subirCartel }: { cliente: () => Promise<Client>; subirCartel: SubirCartel }): Almacen & {
+export function almacenTurso({ cliente, subirCartel }: { cliente: () => Promise<Client>; subirCartel?: SubirCartel }): Almacen & {
   /** Todo (eventos y contactos), para migrar a otro almacén */
   exportar(): Promise<{ eventos: FilaEvento[]; contactos: { evento_id: string; canal: Contacto["canal"]; valor: string; creado: string }[] }>;
+  /** Un cartel guardado en la base de datos (para servirlo en /cartel/<id>) */
+  cartel(id: string): Promise<{ tipo: string; datos: Uint8Array } | null>;
 } {
   let listo: Promise<Client> | null = null;
   // Conecta y crea las tablas la primera vez
@@ -137,15 +149,18 @@ export function almacenTurso({ cliente, subirCartel }: { cliente: () => Promise<
     async crear({ evento, cartel, hash, contacto, duplicados = [] }: NuevoPendiente) {
       const id = randomUUID();
       const slug = limpiarSlug(evento.slug, `evento-${evento.fuente.recibido.slice(0, 10)}`);
-      // El cartel primero: si falla la subida, no queda un pendiente a medias
-      const cartelUrl = cartel ? await subirCartel(`carteles/${id}.${EXT[cartel.tipo]}`, cartel) : null;
+      // Con Vercel Blob, el cartel se sube primero (si falla, no queda un pendiente a medias);
+      // sin él, va en la tabla carteles en la misma transacción que el evento
+      const cartelUrl = !cartel ? null : subirCartel ? await subirCartel(`carteles/${id}.${EXT[cartel.tipo]}`, cartel) : rutaCartelTurso(id, cartel.tipo);
       const t = ahora();
-      const sentencias: InStatement[] = [
+      const sentencias: InStatement[] = [];
+      if (cartel && !subirCartel)
+        sentencias.push({ sql: "INSERT INTO carteles (id, tipo, datos, creado) VALUES (?, ?, ?, ?)", args: [id, cartel.tipo, cartel.datos, t] });
+      sentencias.push(
         {
           sql: "INSERT INTO eventos (id, slug, estado, datos, hash, cartel_url, duplicados, creado, actualizado) VALUES (?, ?, 'pendiente', ?, ?, ?, ?, ?, ?)",
           args: [id, slug, JSON.stringify({ ...evento, slug }), hash ?? null, cartelUrl, JSON.stringify(duplicados), t, t],
-        },
-      ];
+        });
       if (contacto) sentencias.push({ sql: "INSERT INTO contactos (evento_id, canal, valor, creado) VALUES (?, ?, ?, ?)", args: [id, contacto.canal, contacto.valor, t] });
       await (await db()).batch(sentencias, "write");
       return {
@@ -179,6 +194,8 @@ export function almacenTurso({ cliente, subirCartel }: { cliente: () => Promise<
         [
           { sql: "UPDATE eventos SET estado = 'descartado', actualizado = ? WHERE id = ?", args: [ahora(), id] },
           { sql: "DELETE FROM contactos WHERE evento_id = ?", args: [id] },
+          // El cartel de lo descartado no se publica nunca: fuera
+          { sql: "DELETE FROM carteles WHERE id = ?", args: [id] },
         ],
         "write",
       );
@@ -204,6 +221,12 @@ export function almacenTurso({ cliente, subirCartel }: { cliente: () => Promise<
           recibido: e.fuente.recibido,
         };
       });
+    },
+
+    async cartel(id) {
+      if (!/^[0-9a-f-]{36}$/.test(id)) return null;
+      const [c] = (await (await db()).execute({ sql: "SELECT tipo, datos FROM carteles WHERE id = ?", args: [id] })).rows;
+      return c ? { tipo: String(c.tipo), datos: new Uint8Array(c.datos as ArrayBuffer) } : null;
     },
 
     async exportar() {

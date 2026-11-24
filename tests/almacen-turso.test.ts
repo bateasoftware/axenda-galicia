@@ -36,6 +36,22 @@ describe("almacenTurso", () => {
     assert.ok(!String(fila.datos).includes("34600000000"));
   });
 
+  test("sin Vercel Blob, el cartel se guarda en la base de datos y se sirve en /cartel/<id>", async () => {
+    const cliente = createClient({ url: ":memory:" });
+    const a = almacenTurso({ cliente: async () => cliente });
+    const p = await a.crear({ evento: evento(), cartel: { datos: Buffer.from([7, 8, 9]), tipo: "image/jpeg" } });
+    assert.equal(p.cartel, `/cartel/${p.id}.jpg`);
+    const c = await a.cartel(p.id);
+    assert.equal(c?.tipo, "image/jpeg");
+    assert.deepEqual([...c!.datos], [7, 8, 9]);
+    const r = await a.publicar(p.id, evento());
+    assert.equal((await a.publicados()).find((e) => e.slug === r.slug)?.cartel, `/cartel/${p.id}.jpg`, "válido según el esquema");
+    // Al descartar, el cartel se borra
+    const p2 = await a.crear({ evento: evento(), cartel: { datos: Buffer.from([1]), tipo: "image/jpeg" } });
+    await a.descartar(p2.id);
+    assert.equal(await a.cartel(p2.id), null);
+  });
+
   test("yaVisto por hash y por fuente + uid (columnas generadas desde el JSON)", async () => {
     const { a } = nuevo();
     await a.crear({ evento: evento({ fuente: { canal: "ics", recibido: "2026-11-24T08:00", id_fuente: "cultura-gal", uid: "u@1" } }), hash: "h2" });

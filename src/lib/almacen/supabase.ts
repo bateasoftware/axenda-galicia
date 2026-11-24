@@ -200,8 +200,26 @@ export async function importarEnSupabase(
   { url, clave }: { url: string; clave: string },
   eventos: FilaMigracion[],
   contactos: { evento_id: string; canal: "whatsapp" | "email"; valor: string; creado: string }[],
+  /** Lee un cartel guardado en la base de datos de origen (los "/cartel/<id>.jpg" de Turso) */
+  leerCartel?: (id: string) => Promise<{ tipo: string; datos: Uint8Array } | null>,
 ) {
   const base = url.replace(/\/$/, "");
+  // Carteles guardados dentro de Turso → bucket "carteles" de Supabase
+  const nuevaUrl = new Map<string, string>();
+  for (const e of eventos) {
+    const m = e.cartel_url?.match(/^\/cartel\/([0-9a-f-]{36})\.(jpg|png|webp)$/);
+    if (!m || !leerCartel) continue;
+    const c = await leerCartel(m[1]);
+    if (!c) continue;
+    const ruta = `${m[1]}.${m[2]}`;
+    const res = await fetch(`${base}/storage/v1/object/${BUCKET}/${ruta}`, {
+      method: "POST",
+      headers: { apikey: clave, ...(clave.startsWith("eyJ") ? { Authorization: `Bearer ${clave}` } : {}), "Content-Type": c.tipo, "x-upsert": "true" },
+      body: c.datos as BodyInit,
+    });
+    if (!res.ok) throw new ErrorSupabase(res.status, `Storage: ${(await res.text()).slice(0, 200)}`);
+    nuevaUrl.set(e.id, ruta);
+  }
   const cabeceras: Record<string, string> = {
     apikey: clave,
     ...(clave.startsWith("eyJ") ? { Authorization: `Bearer ${clave}` } : {}),
@@ -216,18 +234,24 @@ export async function importarEnSupabase(
   };
   await enviar(
     "eventos",
-    eventos.map((e) => ({
-      id: e.id,
-      slug: e.slug,
-      estado: e.estado,
-      datos: JSON.parse(e.datos),
-      hash: e.hash,
-      cartel_path: e.cartel_url,
-      duplicados: JSON.parse(e.duplicados || "[]"),
-      creado: e.creado,
-      actualizado: e.actualizado,
-      publicado: e.publicado,
-    })),
+    eventos.map((e) => {
+      const ruta = nuevaUrl.get(e.id);
+      const datos = JSON.parse(e.datos);
+      // Lo publicado lleva la URL del cartel dentro de "datos": se cambia a la de Supabase
+      if (ruta && datos.cartel) datos.cartel = `${base}/storage/v1/object/public/${BUCKET}/${ruta}`;
+      return {
+        id: e.id,
+        slug: e.slug,
+        estado: e.estado,
+        datos,
+        hash: e.hash,
+        cartel_path: ruta ?? e.cartel_url,
+        duplicados: JSON.parse(e.duplicados || "[]"),
+        creado: e.creado,
+        actualizado: e.actualizado,
+        publicado: e.publicado,
+      };
+    }),
   );
   await enviar("contactos", contactos);
 }

@@ -14,7 +14,8 @@
     "revisar-fuentes": "tsx scripts/revisar-fuentes.ts",
     "importar": "tsx --env-file-if-exists=.env.local scripts/importar.ts",
     "duplicados": "tsx --env-file-if-exists=.env.local scripts/duplicados.ts",
-    "migrar-a-supabase": "tsx --env-file-if-exists=.env.local scripts/migrar-a-supabase.ts"
+    "migrar-a-supabase": "tsx --env-file-if-exists=.env.local scripts/migrar-a-supabase.ts",
+    "subir-pendientes": "tsx --env-file-if-exists=.env.local scripts/subir-pendientes.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.13.0",

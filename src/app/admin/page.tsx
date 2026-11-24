@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { almacen, almacenDisponible, NOMBRE_ALMACEN, type Pendiente } from "@/lib/almacen";
 import { exigirAdmin } from "@/lib/admin/sesion";
 import { capitalizar, fechaLarga, hora } from "@/lib/fechas";
+import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
 import { validarEvento } from "@/lib/validacion";
 import { salir } from "./acciones";
 
@@ -68,9 +69,10 @@ function Tarjeta({ p }: { p: Pendiente }) {
   const e = p.evento;
   const v = validarEvento(e, null);
   const ini = e.sesiones[0]?.inicio;
+  const porCompletar = !!e.inferido?.includes(MARCA_POR_COMPLETAR);
   const avisos = [
-    e.confianza < 0.8 && `confianza baja (${Math.round(e.confianza * 100)} %)`,
-    e.inferido?.length && `deducido: ${e.inferido.join(", ")}`,
+    !porCompletar && e.confianza < 0.8 && `confianza baja (${Math.round(e.confianza * 100)} %)`,
+    !porCompletar && e.inferido?.length && `deducido: ${e.inferido.join(", ")}`,
     !v.ok && `${v.errores.length} ${v.errores.length === 1 ? "error" : "errores"} para publicar`,
   ].filter(Boolean) as string[];
   return (
@@ -93,6 +95,7 @@ function Tarjeta({ p }: { p: Pendiente }) {
             {e.fuente.id_fuente ? ` · ${e.fuente.id_fuente}` : ""}
             {p.contacto ? " · con aviso al remitente" : ""}
           </p>
+          {porCompletar && <p className="mt-1 text-xs font-medium text-[var(--mar)]">✍️ Por completar a mano</p>}
           {p.duplicados.length > 0 && (
             <p className="mt-1 text-xs font-medium text-red-700">⚠ Posible duplicado ({p.duplicados.length})</p>
           )}

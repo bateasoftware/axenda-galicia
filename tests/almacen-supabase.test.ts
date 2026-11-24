@@ -115,10 +115,28 @@ describe("migración desde Turso", () => {
 });
 
 describe("qué almacén se usa", () => {
-  const turso = { TURSO_DATABASE_URL: "libsql://x.turso.io", TURSO_AUTH_TOKEN: "t", BLOB_READ_WRITE_TOKEN: "b" };
+  const turso = { TURSO_DATABASE_URL: "libsql://x.turso.io", TURSO_AUTH_TOKEN: "t" };
   const supa = { SUPABASE_URL: URL_SB, SUPABASE_SERVICE_ROLE_KEY: "k" };
   test("Turso tiene prioridad (útil mientras se migra)", () => assert.equal(almacen({ ...turso, ...supa }).tipo, "turso"));
   test("sin Turso, Supabase", () => assert.equal(almacen(supa).tipo, "supabase"));
-  test("Turso sin Blob no cuenta: los carteles no tendrían dónde ir", () => assert.equal(remotoConfigurado({ TURSO_DATABASE_URL: "libsql://x" }), false));
+  test("Turso basta solo (los carteles van a su base de datos)", () => assert.equal(remotoConfigurado({ TURSO_DATABASE_URL: "libsql://x" }), true));
   test("sin nada, ficheros locales", () => assert.equal(almacen({}).tipo, "local"));
 });
+
+test("migración: los carteles guardados en Turso se suben a Supabase Storage", () =>
+  conFetch(
+    () => [],
+    async (llamadas) => {
+      const datos = JSON.stringify(evento({ cartel: `/cartel/${ID}.jpg` }));
+      await importarEnSupabase(
+        { url: URL_SB, clave: "clave" },
+        [{ id: ID, slug: "prueba-2026", estado: "publicado", datos, hash: null, cartel_url: `/cartel/${ID}.jpg`, duplicados: "[]", creado: "c", actualizado: "a", publicado: "p" }],
+        [],
+        async () => ({ tipo: "image/jpeg", datos: new Uint8Array([1, 2, 3]) }),
+      );
+      assert.equal(llamadas[0].url, `${URL_SB}/storage/v1/object/carteles/${ID}.jpg`);
+      const [fila] = llamadas[1].cuerpo as { cartel_path: string; datos: { cartel: string } }[];
+      assert.equal(fila.cartel_path, `${ID}.jpg`);
+      assert.equal(fila.datos.cartel, `${URL_SB}/storage/v1/object/public/carteles/${ID}.jpg`);
+    },
+  ));

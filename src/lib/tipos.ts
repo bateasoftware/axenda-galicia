@@ -84,7 +84,7 @@ export const EventoBase = z.object({
   precio: z.string().optional(),
   inscripcion: InscripcionBase.optional(),
   extras: z.array(z.string()).optional(),
-  /** Ruta pública del cartel, p. ej. "/carteles/xxx.jpg", o URL de Vercel Blob o Supabase Storage */
+  /** Ruta pública del cartel: "/carteles/xxx.jpg" (repo), "/cartel/<id>.jpg" (guardado en Turso) o URL de Vercel Blob o Supabase Storage */
   cartel: z.string().optional(),
   idioma: z.enum(["gl", "es", "mixto"]),
   fuente: FuenteEventoBase,
@@ -134,8 +134,8 @@ export const EventoSchema = z.strictObject({
   cartel: z
     .string()
     .regex(
-      /^(\/carteles\/[^/]+|https:\/\/[^/]+\/storage\/v1\/object\/public\/carteles\/[^/]+|https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/carteles\/[^/]+)\.(jpe?g|png|webp)$/,
-      "debe ser /carteles/<fichero> o una URL de Vercel Blob o Supabase Storage",
+      /^(\/carteles\/[^/]+|\/cartel\/[0-9a-f-]{36}|https:\/\/[^/]+\/storage\/v1\/object\/public\/carteles\/[^/]+|https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/carteles\/[^/]+)\.(jpe?g|png|webp)$/,
+      "debe ser /carteles/<fichero>, /cartel/<id> o una URL de Vercel Blob o Supabase Storage",
     )
     .optional(),
   fuente: z.strictObject({ ...FuenteEventoBase.shape, recibido: fechaHora, url: z.url().optional() }),

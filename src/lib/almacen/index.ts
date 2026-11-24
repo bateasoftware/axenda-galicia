@@ -1,6 +1,11 @@
 import { almacenLocal } from "./local";
 import { almacenSupabase, supabaseConfigurado } from "./supabase";
 import { almacenTurso, clienteTurso, subirCartelBlob, tursoConfigurado } from "./turso";
+
+/** Turso, con los carteles en la base de datos (o en Vercel Blob si está su token) */
+export function almacenTursoDesdeEnv(env: Record<string, string | undefined> = process.env) {
+  return almacenTurso({ cliente: () => clienteTurso(env), subirCartel: env.BLOB_READ_WRITE_TOKEN ? subirCartelBlob(env.BLOB_READ_WRITE_TOKEN) : undefined });
+}
 import type { Almacen } from "./tipos";
 
 export * from "./tipos";
@@ -12,7 +17,7 @@ type Env = Record<string, string | undefined>;
 
 export const NOMBRE_ALMACEN: Record<Almacen["tipo"], string> = {
   local: "ficheros locales (data/pendientes)",
-  turso: "Turso + Vercel Blob",
+  turso: "Turso",
   supabase: "Supabase",
 };
 
@@ -21,7 +26,7 @@ export const NOMBRE_ALMACEN: Record<Almacen["tipo"], string> = {
  * (npm run migrar-a-supabase) basta con quitar las variables de Turso para cambiar de almacén.
  */
 export function almacenRemoto(env: Env = process.env): Almacen | null {
-  if (tursoConfigurado(env)) return almacenTurso({ cliente: () => clienteTurso(env), subirCartel: subirCartelBlob(env.BLOB_READ_WRITE_TOKEN!) });
+  if (tursoConfigurado(env)) return almacenTursoDesdeEnv(env);
   if (supabaseConfigurado(env)) return almacenSupabase({ url: env.SUPABASE_URL!, clave: env.SUPABASE_SERVICE_ROLE_KEY! });
   return null;
 }

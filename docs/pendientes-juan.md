@@ -1,184 +1,167 @@
 # Lo que te toca a ti (Juan)
 
-## Por dónde empezar (en este orden)
+Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner claves y decidir. **No me pases claves por el chat.**
 
-1. **Turso + Vercel Blob** (bloque 5 A). Sin ellos no funcionan en Vercel ni el panel, ni el formulario, ni WhatsApp. Son 15 minutos.
-2. **`ADMIN_CLAVE` y `ANTHROPIC_API_KEY` en Vercel** (bloques 3 y 6). Con esto ya tienes panel, formulario e importación.
-3. **Activar la importación diaria** (bloque 5 A, GitHub). Eventos de Cultura de Galicia y de Vigo cada mañana, sin hacer nada.
-4. **Privacidad y aviso legal** (bloque 5 C). Hace falta para WhatsApp en modo Live.
-5. **WhatsApp Business** (bloque 5 B). Es el canal que más eventos traerá, pero el más largo de montar (número, Meta, plantilla).
-6. **Contactar con concellos y asociaciones** (bloque 1) y **difundir el widget** (bloque 7).
+Última actualización: modo sin costes (Turso con los carteles dentro y sin la API de Claude).
 
-Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisiones. Cada punto dice **qué** hacer, **por qué**, **dónde** y **qué me tienes que devolver**. Las variables de entorno van en Vercel (Settings → Environment Variables) y en tu `.env.local` para probar en local. **No me pases claves por el chat.**
+## Qué cuesta dinero y qué no
 
-Última actualización: base de datos en Turso (con migración preparada a Supabase). Todo el código de los 8 bloques está hecho; lo que queda en esta lista depende de ti.
+| Servicio | Para qué | Coste | Estado |
+|---|---|---|---|
+| **Turso** | Base de datos: pendientes, publicados y carteles | Gratis (plan gratuito, sin tarjeta) | ✅ Usar ahora |
+| **Vercel** (plan Hobby) | Alojar la web | Gratis. Ojo: Hobby es para uso **no comercial**; cuando metas publicidad o destacados de pago habrá que pasar a Pro | ✅ Ya lo usas |
+| **GitHub Actions** | Importar eventos cada mañana | Gratis | ✅ Usar ahora |
+| **Gmail + Apps Script** | Recibir carteles por email | Gratis | Opcional |
+| **Cloudflare Turnstile** | Antispam del formulario | Gratis | Solo si llega spam |
+| **API de Claude** (`ANTHROPIC_API_KEY`) | Leer el cartel y rellenar los datos solo | **De pago por uso**: unos céntimos por cartel | ⏸ Aparcado |
+| **WhatsApp Business** | Que te manden carteles a un número | **Número de teléfono** (una línea) + **avisos tras 24 h** (céntimos por mensaje). Recibir y contestar en 24 h es gratis | ⏸ Aparcado |
+| **Vercel Blob** | Guardar carteles fuera de la base de datos | Ya no hace falta: los carteles van en Turso | ✖ No usar |
+| **Supabase** | Alternativa a Turso | Gratis, pero no hace falta | ⏸ Más adelante, si quieres (hay migración preparada) |
+| **Dominio propio** | `axenda.gal` o similar | Unos euros al año | ⏸ Cuando decidas la marca |
 
-## Bloque 1 · Fuentes
+### Sin la API de Claude, ¿cómo entran los eventos?
 
-- [ ] **Revisar las fuentes "sin verificar"** de `data/fuentes.json`. Ejecuta `npm run revisar-fuentes -- --todas`; las que salen "(sin verificar)" son las que no pude comprobar.
-  - **Por qué:** no encontré su agenda o su web no respondía.
-  - **Cuáles:**
-    - Cines Municipais da Ramallosa;
-    - Biblioteca de Baiona;
-    - Mancomunidade de Val Miñor (valminor.info daba error 500);
-    - Turismo Rías Baixas (no se ve su agenda);
-    - las cuentas de redes;
-    - la prensa.
-  - **Dónde:** en el navegador. Corrige la URL en `data/fuentes.json` y cambia `"estado"` a `"verificada"`.
-  - **Devuélveme:** nada, o la URL buena si quieres que la configure yo.
-- [ ] **Pedir la programación por email a los concellos** (cultura de Nigrán, Baiona y Gondomar) y a los Cines da Ramallosa.
-  - **Por qué:** sus webs no tienen calendario y es la fuente más fiable.
-  - **Dónde:** en sus emails de cultura, con el guion de contacto de `docs/fuentes.md`.
-  - **Devuélveme:** nada. Si alguno tiene un calendario de Google o ICS, pásame la URL y lo añado como importador.
-- [ ] **Hacer la lista de asociaciones, ANPAs y clubes** a los que escribir.
-  - **Por qué:** el tejido asociativo es lo que más eventos trae.
-  - **Dónde:** empieza por https://concellodegondomar.gal/asociacions/culturais/ y por tus contactos.
-  - **Devuélveme:** nada. Si quieres, añádelos a `data/fuentes.json` con `"metodo": "envio-directo"`.
-- [ ] **Decidir la frecuencia de revisión** que de verdad puedes asumir. Ahora es semanal para concellos y prensa, y quincenal o mensual para el resto.
-  - **Dónde:** en el campo `frecuencia` de `data/fuentes.json`.
+**Todo sigue funcionando:** el formulario de `/enviar`, el email y las fuentes automáticas. La diferencia es quién rellena los datos:
 
-## Bloque 2 · Importadores
+- **Carteles sueltos (formulario, email):** llegan al panel `/admin` como **"✍️ Por completar"**, con el cartel y lo que escribió quien lo mandó. Rellenas título, fecha, lugar y categorías mirando el cartel. Son 1 o 2 minutos por cartel.
+- **Muchos carteles o un programa en PDF:** déjalos en `data/entrada/` y **pídeme a mí** (Claude Code) "extrae los carteles de data/entrada". Lo hago con tu suscripción, sin la API. Después ejecutas `npm run subir-pendientes` y los revisas en `/admin`.
+- **Fuentes automáticas** (Cultura de Galicia y agenda de Vigo): no usan IA, así que siguen igual. Solo el boletín del SERGAS (un PDF) necesita la IA; sin ella, lo extraigo yo cuando me lo pidas.
 
-- [ ] **Probar la importación en local**: `npm run importar -- --simular` y después `npm run importar`.
-  - **Por qué:** para ver qué trae cada fuente antes de dejarla automática. Hoy encuentra unos 8 eventos de Cultura de Galicia y unos 14 de datos.vigo.org.
-  - **Dónde:** en tu ordenador. Los pendientes quedan en `data/pendientes/` y se revisan en `/admin` cuando esté (bloque 6).
-  - **Devuélveme:** si alguna fuente trae ruido (exposiciones largas, programas), dime si la quieres desactivar (`"activa": false`).
-- [ ] **Decidir si importamos las exposiciones y programas largos de Vigo.**
-  - **Por qué:** datos.vigo.org solo da la agenda de hoy y sin hora; muchos son programas de varios meses.
-  - **Devuélveme:** "sí" o "no". Si es no, filtro en el importador los que duran más de una semana.
+## Ahora (todo gratis), en este orden
 
-## Bloque 3 · Programas en PDF y carteles con varios eventos
+### 1. Crear la base de datos en Turso
 
-- [ ] **Poner `ANTHROPIC_API_KEY` en `.env.local`** si aún no está.
-  - **Por qué:** `npm run extraer` y el importador del boletín del SERGAS usan la IA.
-  - **Dónde:** https://console.anthropic.com/settings/keys
-  - **Devuélveme:** nada (no me pases la clave).
-- [ ] **Probar con un programa real**: copia un PDF (p. ej. el programa de Nadal de un concello) en `data/entrada/` y ejecuta `npm run extraer`.
-  - **Por qué:** no lo he probado contra la IA real para no gastar llamadas sin tu permiso. Los tests usan una IA simulada.
-  - **Devuélveme:** si separa bien los actos o junta o parte de más. Con eso ajusto el prompt de `src/lib/extraccion.ts`.
+Tienes la herramienta de Turso instalada en el Mac y con sesión iniciada (cuenta `bateasoftware`, donde ya está `radar-gasolineras`). Hay dos opciones:
 
-## Bloque 4 · Duplicados
+- **A. La creo yo.** Dime "crea la base de Turso" y ejecuto estos comandos por ti, enseñándote lo que hago. Al final te digo dónde quedan los valores; no hace falta que me los pases.
+- **B. La creas tú**, en la Terminal, dentro de la carpeta del proyecto:
 
-- [ ] **Validar los umbrales** con casos reales cuando lleguen los primeros duplicados. Hoy: 85 % para no crear otro, 50 % para marcarlo.
-  - **Por qué:** con pocos datos he puesto valores prudentes. Mejor marcar de más que perder un evento.
-  - **Dónde:** `npm run duplicados` y las marcas "posible duplicado" en `/admin`.
-  - **Devuélveme:** ejemplos de falsos positivos o de duplicados que se cuelen, y ajusto `src/lib/duplicados.ts`.
+```bash
+turso db create axenda
+```
 
-## Bloque 5 · Base de datos y WhatsApp Business
+```bash
+turso db show axenda --url
+```
 
-### A. Base de datos: Turso + Vercel Blob (hace falta antes que WhatsApp y que el panel en Vercel)
+```bash
+turso db tokens create axenda
+```
 
-**Por qué:** en Vercel no se puede escribir en disco. Los pendientes y lo que publiques desde `/admin` se guardan en **Turso**, los carteles en **Vercel Blob**, y la web lee de ahí además de los JSON de `data/eventos`. Las tablas se crean solas la primera vez: no hay que ejecutar SQL.
+El primer comando crea una base **nueva** solo para Axenda, sin tocar la de `radar-gasolineras`. El segundo te da la **URL** (empieza por `libsql://`) y el tercero un **token** (una cadena larga). Guarda los dos en tu gestor de contraseñas.
 
-- [ ] **Crear una base de datos nueva para Axenda** en tu cuenta de Turso. No reutilices la del otro proyecto, para no mezclar datos ni permisos (el plan gratuito permite varias).
-  - **En la web:** https://app.turso.tech → *Databases* → *Create database*. Nombre: `axenda`. Región: Europa, la más cercana a Vercel (p. ej. Frankfurt o Irlanda).
-  - **O con la CLI:** `turso db create axenda`.
-- [ ] **Copiar la URL y crear un token:**
-  - **URL** (empieza por `libsql://`): en la página de la base, o con `turso db show axenda --url` → variable `TURSO_DATABASE_URL`.
-  - **Token de lectura y escritura:** *Generate token* (sin caducidad), o con `turso db tokens create axenda` → variable `TURSO_AUTH_TOKEN`. **Es secreto.**
-- [ ] **Crear el almacén de carteles (Vercel Blob):** Vercel → tu proyecto → *Storage* → *Create* → *Blob* → nombre `axenda-carteles` → *Connect* al proyecto (todos los entornos).
-  - Vercel añade sola la variable `BLOB_READ_WRITE_TOKEN`.
-  - Para tu `.env.local`, cópiala de *Storage → axenda-carteles → .env.local*, o usa `vercel env pull`.
-  - El plan gratuito de Blob da de sobra para carteles reducidos a 1600 px.
-- [ ] **Añadir `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` en Vercel**, en *Settings → Environment Variables*, entorno *Production*. Después vuelve a desplegar.
-- [ ] **Activar la importación diaria** en GitHub (repo → *Settings → Secrets and variables → Actions*):
-  - Secretos: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BLOB_READ_WRITE_TOKEN` y `ANTHROPIC_API_KEY`.
-  - Variable (pestaña *Variables*): `IMPORTAR_ACTIVO` = `true`.
-  - Se ejecuta cada mañana (`.github/workflows/importar.yml`). Puedes lanzarla a mano en *Actions → Importar eventos → Run workflow*.
-- **Devuélveme:** "Turso listo". Con eso compruebo en producción que el panel y la web leen bien.
+No hay que crear tablas ni configurar nada más en Turso: la web las crea sola la primera vez.
 
-### A2. Pasar a Supabase más adelante (cuando quieras)
+### 2. Poner las claves (dónde va cada cosa)
+
+Las "claves" son valores que la web lee al arrancar (variables de entorno). Van en **dos sitios**:
+
+**a) En Vercel (para la web publicada).** Vercel → proyecto `axenda-galicia` → *Settings* → *Environment Variables*. Añade una a una, marcando *Production*:
+
+| Nombre | Valor |
+|---|---|
+| `TURSO_DATABASE_URL` | la URL del paso 1 (`libsql://…`) |
+| `TURSO_AUTH_TOKEN` | el token del paso 1 |
+| `ADMIN_CLAVE` | una contraseña que **inventas tú** para entrar en `/admin` (mínimo 8 caracteres; mejor una frase larga) |
+
+Después: *Deployments* → en el último, menú ⋯ → *Redeploy*. Sin esto no se aplican.
+
+**b) En tu Mac (para probar en local y para los comandos `npm run …`).** Crea un archivo llamado `.env.local` en la carpeta del proyecto con estas tres líneas:
+
+```
+TURSO_DATABASE_URL=libsql://…
+TURSO_AUTH_TOKEN=…
+ADMIN_CLAVE=…
+```
+
+Ese archivo no se sube nunca a GitHub (está en `.gitignore`). Si eliges la opción A del paso 1, te lo creo yo.
+
+**No pongas `ANTHROPIC_API_KEY`:** es la clave de la API de Claude, que se paga por uso. Mientras no esté, todo funciona en modo "por completar".
+
+### 3. Activar la importación diaria (GitHub)
+
+Cada mañana trae solos los eventos de Cultura de Galicia y de la agenda de Vigo a tu panel.
+
+1. Ve a https://github.com/bateasoftware/axenda-galicia → *Settings* → *Secrets and variables* → *Actions*.
+2. En *Secrets* → *New repository secret*, crea `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` con los mismos valores.
+3. En la pestaña *Variables* → *New repository variable*: nombre `IMPORTAR_ACTIVO`, valor `true`.
+4. Para probarla ya: *Actions* → *Importar eventos* → *Run workflow*.
+
+### 4. Probar que todo va
+
+1. Entra en `https://axenda-galicia.vercel.app/enviar` y manda un cartel de prueba con el formulario.
+2. Entra en `https://axenda-galicia.vercel.app/admin` con tu `ADMIN_CLAVE`. Debe aparecer como "✍️ Por completar".
+3. Rellénalo y pulsa *Publicar* (o *Descartar* si era de prueba).
+4. **Devuélveme:** "probado", o lo que haya fallado. Si falla, mira *Vercel → Logs*.
+
+## Cuando puedas (gratis, pero lleva tu tiempo)
+
+- [ ] **Revisar las fuentes "sin verificar".** Ejecuta `npm run revisar-fuentes -- --todas` para verlas.
+  - **Cuáles:** Cines da Ramallosa, Biblioteca de Baiona, Mancomunidade de Val Miñor (su web daba error), Turismo Rías Baixas, redes y prensa.
+  - **Qué hacer:** corrige la URL en `data/fuentes.json` y pon `"estado": "verificada"`, o pásame la URL buena.
+- [ ] **Escribir a concellos, asociaciones, ANPAs y clubes.** El guion está en `docs/fuentes.md`. Empieza por https://concellodegondomar.gal/asociacions/culturais/.
+  - **Por qué:** que te manden ellos los carteles es lo que más eventos trae.
+  - **Devuélveme:** si alguno tiene un calendario de Google o un ICS: lo añado como fuente automática.
+- [ ] **Revisar las fuentes manuales cuando toque.** `npm run revisar-fuentes` te dice cuáles tocan hoy. Al terminar, márcalas con `npm run revisar-fuentes -- --marcar id1 id2`.
+- [ ] **(Opcional) Carteles por email.** Sigue `docs/entrada-automatica.md`. Es gratis y necesita las variables `ENTRADA_SECRETO` en Vercel, un filtro de Gmail y un script de Apps Script.
+- [ ] **Difundir el widget** (`/widget`) entre hoteles, campings, casas rurales y concellos.
+- [ ] **Mirar `/admin/cobertura`** cada semana o cada dos, para ver qué canal funciona.
+
+## Decisiones pendientes
+
+- [ ] **Política de privacidad y aviso legal.** Hacen falta por el RGPD: guardamos el email de quien manda un evento, solo para avisarle, y se borra al publicar. También los pide Meta si algún día activas WhatsApp.
+  - **Devuélveme:** quién es el responsable (nombre o razón social, NIF y email de contacto). Con eso redacto `/privacidad` y `/aviso-legal`.
+- [ ] **¿Importamos las exposiciones y programas largos de Vigo?** Su agenda abierta solo da lo de hoy y sin hora. **Devuélveme:** "sí" o "no". Si es no, los filtro.
+- [ ] **Umbral de duplicados.** Ahora: 85 % para no crear otro y 50 % para marcarlo. Avísame si ves falsos positivos.
+
+## Aparcado (tiene coste): cuando quieras activarlo
+
+### API de Claude (extracción automática)
+
+- **Qué hace:** lee el cartel o el PDF y rellena los datos solo. Tú solo revisas y publicas.
+- **Coste:** pago por uso, unos céntimos por cartel. Se puede poner un límite de gasto mensual en la consola.
+- **Cómo activarlo:**
+  - Crea la clave en https://console.anthropic.com/settings/keys y ponla como `ANTHROPIC_API_KEY` en Vercel y en `.env.local`.
+  - Si quieres que también funcione la importación diaria del boletín del SERGAS, añádela además como secreto en GitHub.
+  - No hay que tocar nada más: el código lo detecta.
+
+### WhatsApp Business (Cloud API)
+
+- **Qué hace:** los organizadores reenvían el cartel a un número de Axenda. Les contesta "¡Recibido!" y les avisa al publicar.
+- **Coste:**
+  - una línea de teléfono que **no** tenga WhatsApp instalado;
+  - recibir mensajes y contestar en menos de 24 h: gratis;
+  - avisar pasadas 24 h: necesita una plantilla, que cuesta céntimos por mensaje. Sin plantilla, el panel te da el número y el texto para avisar tú a mano, gratis.
+- **Pasos** (unas 2 horas, la mayoría esperando verificaciones):
+  1. Comprar la línea (prepago o eSIM).
+  2. Crear el portfolio de empresa en https://business.facebook.com.
+  3. Crear una app en https://developers.facebook.com/apps (caso de uso: *Conectar con clientes a través de WhatsApp*) y registrar el número en *WhatsApp → Configuración de la API*. Apunta el **Phone number ID**.
+  4. Crear un usuario del sistema con un token permanente con los permisos `whatsapp_business_messaging` y `whatsapp_business_management`. Apunta la **clave secreta de la app**.
+  5. Poner en Vercel `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` (inventada) y `NEXT_PUBLIC_WHATSAPP_NUMERO`.
+  6. Configurar el webhook `https://axenda-galicia.vercel.app/api/whatsapp` con ese token de verificación y suscribirse a **messages**.
+  7. Pasar la app a modo *Live*: pide la política de privacidad.
+- **Devuélveme:** cuando quieras activarlo, te acompaño paso a paso.
+
+### Pasar de Turso a Supabase (gratis, pero no hace falta)
 
 Está preparado para que sea un trámite de unos 20 minutos, sin tocar código:
 
-1. Crea el proyecto en https://supabase.com/dashboard y ejecuta `supabase/esquema.sql` en su *SQL Editor*.
-2. Pon en tu `.env.local` las variables de Supabase (`SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`) **junto a** las de Turso.
-3. Ejecuta `npm run migrar-a-supabase -- --simular` para ver qué copiaría, y después `npm run migrar-a-supabase`.
-   - Copia pendientes, publicados, descartados y contactos, con los mismos ids y fechas.
-   - Se puede repetir sin duplicar.
-4. Pon las variables de Supabase en Vercel y **quita las de Turso**. Mientras estén las de Turso, la app sigue usando Turso.
-5. Los carteles se quedan en Vercel Blob, con las mismas URL: **no borres el almacén de Blob.**
+1. Crea el proyecto en Supabase y ejecuta `supabase/esquema.sql` en su *SQL Editor*.
+2. Pon `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en `.env.local`, **junto a** las de Turso.
+3. Ejecuta `npm run migrar-a-supabase`. Copia todo, carteles incluidos.
+4. Pon las variables de Supabase en Vercel y quita las de Turso.
 
-### B. WhatsApp Business (Cloud API)
+## Referencia: todas las variables
 
-**Por qué:** es el canal más cómodo para los organizadores. Reenvían el cartel, la IA lo prepara, tú lo apruebas y les llega el aviso con el enlace.
-
-- [ ] **1. Comprar un número nuevo:** una línea prepago o eSIM de cualquier operador. Basta la más barata.
-  - El número **no puede estar en uso en la app de WhatsApp**. Si lo estuvo, borra antes esa cuenta.
-  - Tiene que poder recibir un SMS o una llamada para verificarlo.
-- [ ] **2. Crear el portfolio de empresa** de Meta (Business Manager) en https://business.facebook.com → *Crear cuenta*. Nombre: Axenda (o la marca que elijas).
-- [ ] **3. Crear la app** en https://developers.facebook.com/apps:
-  - *Crear app* → caso de uso *Conectar con clientes a través de WhatsApp* → enlázala a tu portfolio.
-- [ ] **4. Registrar el número** en la app, en *WhatsApp → Configuración de la API* (API Setup):
-  - *Añadir número de teléfono*.
-  - Nombre visible: "Axenda". Debe cumplir sus normas: el nombre de la marca, sin palabras genéricas.
-  - Verifícalo con el SMS.
-  - Apunta el **Phone number ID** → variable `WHATSAPP_PHONE_NUMBER_ID`.
-- [ ] **5. Crear un token permanente.** En business.facebook.com → *Configuración del negocio → Usuarios → Usuarios del sistema*:
-  - *Añadir*, con rol de administrador.
-  - *Asignar activos*: la app y la cuenta de WhatsApp, con control total.
-  - *Generar token* para la app con los permisos `whatsapp_business_messaging` y `whatsapp_business_management`, sin caducidad → variable `WHATSAPP_TOKEN`.
-- [ ] **6. Copiar el secreto de la app**, en *Configuración de la app → Básica → Clave secreta de la app* → variable `WHATSAPP_APP_SECRET`.
-- [ ] **7. Inventar un token de verificación**, por ejemplo con `openssl rand -hex 16` → variable `WHATSAPP_VERIFY_TOKEN`.
-- [ ] **8. Poner las variables en Vercel** (Production) y volver a desplegar:
-  - `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET` y `WHATSAPP_VERIFY_TOKEN`;
-  - `NEXT_PUBLIC_WHATSAPP_NUMERO` (el número con prefijo y sin "+", p. ej. `34600123456`), para mostrarlo en `/enviar`.
-  - Si no lo están ya: `ANTHROPIC_API_KEY` y las de Turso.
-- [ ] **9. Configurar el webhook** en la app → *WhatsApp → Configuración*:
-  - *URL de devolución de llamada*: `https://axenda-galicia.vercel.app/api/whatsapp` (o tu dominio).
-  - *Token de verificación*: el del paso 7 → *Verificar y guardar*.
-  - En *Campos del webhook*, suscríbete a **messages**.
-- [ ] **10. Crear la plantilla del aviso de publicación** en *WhatsApp Manager → Plantillas de mensajes → Crear*:
-  - Nombre: `evento_publicado`. Categoría: **Utilidad**. Idioma: español.
-  - Cuerpo: `Tu evento {{1}} ya está publicado en Axenda: {{2}}`. Ejemplos: "Magosto de Panxón" y `https://axenda-galicia.vercel.app/evento/magosto-panxon-2026`.
-  - Cuando la aprueben → variable `WHATSAPP_PLANTILLA_PUBLICADO` = `evento_publicado`.
-  - **Por qué:** pasadas 24 h desde el último mensaje del organizador, WhatsApp solo deja escribirle con una plantilla aprobada. Sin ella, el aviso solo llega si publicas en menos de 24 h.
-- [ ] **11. Añadir un método de pago** en WhatsApp Manager.
-  - Responder a quien te escribe es gratis dentro de las 24 h.
-  - Las plantillas de utilidad se cobran por mensaje: céntimos en España. Revisa la tarifa vigente en la página de precios de Meta.
-- [ ] **12. Pasar la app a modo "Activo" (Live).** Meta pide la **URL de una política de privacidad**. Hoy la web no tiene: ver la decisión de abajo.
-- [ ] **13. Probar:** manda un cartel al número desde tu móvil.
-  - Debe contestar "¡Recibido!…" y aparecer en `/admin`.
-  - Si no contesta, mira *Vercel → Logs* filtrando por `[whatsapp]`.
-- **Devuélveme:** "WhatsApp listo" y el número público, para ponerlo en `/enviar` y en los textos de contacto.
-
-### C. Decisiones
-
-- [ ] **Política de privacidad y aviso legal.** Hacen falta para el modo Live de Meta y por el RGPD: guardamos el número de quien envía, solo para avisarle, y se borra al avisarle o al descartar.
-  - **Devuélveme:** quién es el responsable (nombre o razón social, NIF y email de contacto). Con eso redacto `/privacidad` y `/aviso-legal`.
-
-## Bloque 6 · Panel de revisión (/admin)
-
-- [ ] **Elegir la contraseña del panel** y ponerla como `ADMIN_CLAVE` en Vercel (Production) y en tu `.env.local`.
-  - Mínimo 8 caracteres; mejor una frase larga o `openssl rand -base64 24`.
-  - **Por qué:** sin ella, `/admin` no deja entrar. Si cambias la clave, se cierran todas las sesiones abiertas.
-  - **Dónde:** Vercel → *Settings → Environment Variables*; vuelve a desplegar.
-  - **Devuélveme:** nada.
-- [ ] **Saber cómo se publica según dónde estés:**
-  - **En local** (`npm run dev` → http://localhost:3000/admin): publicar escribe en `data/eventos/` y copia el cartel a `public/carteles/`. Después tienes que hacer `git commit` y `push`.
-  - **En Vercel** (con Turso): publicar guarda en la base de datos y la web se actualiza sola en unos segundos.
-- [ ] **Avisos al organizador:**
-  - Si vino por WhatsApp, se le manda solo (con la plantilla del bloque 5 si pasaron más de 24 h).
-  - Si vino por email o el formulario, el panel te prepara el mensaje para copiar o responder.
-  - Su contacto se borra en cuanto se publica o se descarta el evento.
-
-## Bloque 7 · Organizadores, formulario y widget
-
-- [ ] **Formulario de `/enviar`:** funciona en cuanto haya `ANTHROPIC_API_KEY` y Turso en Vercel.
-  - Sin base de datos abre un PR en GitHub, y el email de aviso no se guarda.
-  - Lleva un campo trampa para bots y un límite de envíos por IP.
-- [ ] **(Opcional) Antispam Cloudflare Turnstile**, si llega spam:
-  - **Dónde:** https://dash.cloudflare.com → *Turnstile* → *Add widget*. Dominio: el de la web. Modo *Managed*.
-  - **Variables en Vercel:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (site key) y `TURNSTILE_SECRET_KEY` (secret).
-  - **Devuélveme:** nada.
-- [ ] **Difundir el widget** (`/widget`) entre hoteles, campings, casas rurales, asociaciones y concellos.
-  - **Por qué:** trae enlaces y visitas, y es la base de la cuota mensual de `docs/vision.md`.
-  - **Devuélveme:** los primeros sitios que lo pongan, para seguirlos en la cobertura.
-- [ ] **Compartir la página de cada organizador** (`/organizador/<nombre>`) cuando publiques sus eventos. El panel ya te da el enlace al evento.
-
-## Bloque 8 · Cobertura (/admin/cobertura)
-
-- [ ] **Mirarla cada semana o cada dos.** Muestra eventos por canal, por fuente, por concello y por semana, y el % de lo publicado que llega por envío directo (el indicador de éxito de `docs/vision.md`).
-  - **Por qué:** para decidir dónde invertir tu tiempo. Por ejemplo, desactivar una fuente que solo trae ruido o insistir con los organizadores de un concello flojo.
-  - **Dónde:** `/admin/cobertura`.
-  - **Devuélveme:** si echas en falta algún dato (p. ej. visitas por evento), lo añado.
+| Variable | Para qué | ¿Hace falta ahora? |
+|---|---|---|
+| `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Base de datos | **Sí** |
+| `ADMIN_CLAVE` | Contraseña del panel `/admin` | **Sí** |
+| `NEXT_PUBLIC_SITE_URL` | Dirección de la web (cuando tengas dominio) | No |
+| `ANTHROPIC_API_KEY` | Extracción automática con IA (de pago) | No (aparcado) |
+| `ENTRADA_SECRETO` | Carteles por email (Apps Script) | Opcional |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Antispam del formulario | Solo si hay spam |
+| `WHATSAPP_*`, `NEXT_PUBLIC_WHATSAPP_NUMERO` | WhatsApp Business | No (aparcado) |
+| `BLOB_READ_WRITE_TOKEN` | Carteles en Vercel Blob | No (van en Turso) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Si algún día pasas a Supabase | No |
+| `GITHUB_TOKEN`, `GITHUB_REPO` | Recibir por email sin base de datos (abre PRs; necesita la IA) | No |

@@ -19,6 +19,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS eventos_slug_publicado ON eventos (slug) WHERE
 CREATE INDEX IF NOT EXISTS eventos_estado ON eventos (estado, creado);
 CREATE INDEX IF NOT EXISTS eventos_hash ON eventos (hash);
 CREATE INDEX IF NOT EXISTS eventos_origen ON eventos (id_fuente, uid);
+CREATE TABLE IF NOT EXISTS carteles (
+  id     TEXT PRIMARY KEY,
+  tipo   TEXT NOT NULL,
+  datos  BLOB NOT NULL,
+  creado TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS contactos (
   evento_id TEXT PRIMARY KEY,
   canal     TEXT NOT NULL CHECK (canal IN ('whatsapp', 'email')),
