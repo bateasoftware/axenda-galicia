@@ -11,7 +11,8 @@
     "publicar": "tsx scripts/publicar.ts",
     "validar": "tsx scripts/validar.ts",
     "test": "tsx --test tests/*.test.ts",
-    "revisar-fuentes": "tsx scripts/revisar-fuentes.ts"
+    "revisar-fuentes": "tsx scripts/revisar-fuentes.ts",
+    "importar": "tsx --env-file-if-exists=.env.local scripts/importar.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.13.0",

@@ -51,6 +51,23 @@ export const InscripcionBase = z.object({
   hasta: z.string().optional().describe("YYYY-MM-DD"),
 });
 
+export const LISTA_CANALES = ["whatsapp", "formulario", "email", "ics", "programa-pdf", "datos-abiertos", "manual"] as const;
+
+/** De dónde viene el evento. Nunca lleva datos de quien lo envía (esos van aparte y no se publican). */
+export const FuenteEventoBase = z.object({
+  canal: z.enum(LISTA_CANALES),
+  /** Cuándo llegó o se importó, YYYY-MM-DDTHH:MM hora de Galicia */
+  recibido: z.string(),
+  /** id de la fuente en data/fuentes.json (importadores) */
+  id_fuente: z.string().optional(),
+  /** Página original del evento */
+  url: z.string().optional(),
+  /** Identificador del evento en la fuente (UID del ICS, id del dataset…), para no importarlo dos veces */
+  uid: z.string().optional(),
+  /** Atribución que exige la licencia de la fuente (p. ej. CC BY / ODC-BY); se muestra en la ficha */
+  atribucion: z.string().optional(),
+});
+
 export const EventoBase = z.object({
   slug: z.string().describe("kebab-case corto con lugar y año"),
   titulo: z.string().describe("Título claro en castellano"),
@@ -67,13 +84,10 @@ export const EventoBase = z.object({
   precio: z.string().optional(),
   inscripcion: InscripcionBase.optional(),
   extras: z.array(z.string()).optional(),
-  /** Ruta pública del cartel, p. ej. "/carteles/xxx.jpg" */
+  /** Ruta pública del cartel, p. ej. "/carteles/xxx.jpg", o URL de Supabase Storage */
   cartel: z.string().optional(),
   idioma: z.enum(["gl", "es", "mixto"]),
-  fuente: z.object({
-    canal: z.enum(["whatsapp", "formulario", "email", "manual"]),
-    recibido: z.string(),
-  }),
+  fuente: FuenteEventoBase,
   /** Campos deducidos, no leídos literalmente (para revisar) */
   inferido: z.array(z.string()).optional(),
   /** 0–1: seguridad de la extracción */
@@ -117,8 +131,11 @@ export const EventoSchema = z.strictObject({
   organizadores: z.array(z.string().min(1)),
   categorias: z.array(z.enum(LISTA_CATEGORIAS)).min(1, "hace falta al menos una categoría"),
   inscripcion: InscripcionSchema.optional(),
-  cartel: z.string().regex(/^\/carteles\/[^/]+\.(jpe?g|png|webp)$/, "debe ser /carteles/<fichero>").optional(),
-  fuente: z.strictObject({ ...EventoBase.shape.fuente.shape, recibido: fechaHora }),
+  cartel: z
+    .string()
+    .regex(/^(\/carteles\/[^/]+|https:\/\/[^/]+\/storage\/v1\/object\/public\/carteles\/[^/]+)\.(jpe?g|png|webp)$/, "debe ser /carteles/<fichero> o una URL de Supabase Storage")
+    .optional(),
+  fuente: z.strictObject({ ...FuenteEventoBase.shape, recibido: fechaHora, url: z.url().optional() }),
   confianza: z.number().min(0).max(1),
 });
 
@@ -127,6 +144,9 @@ export type Lugar = z.infer<typeof LugarSchema>;
 export type Inscripcion = z.infer<typeof InscripcionSchema>;
 export type Categoria = (typeof LISTA_CATEGORIAS)[number];
 export type Evento = z.infer<typeof EventoSchema>;
+export type Canal = (typeof LISTA_CANALES)[number];
+/** Evento tal como sale del extractor o de un importador: puede no cumplir todavía las reglas estrictas */
+export type EventoBorrador = z.infer<typeof EventoBase>;
 
 // Tabla de lugares conocidos (data/lugares.json), que usa el extractor
 export const LugaresSchema = z.strictObject({

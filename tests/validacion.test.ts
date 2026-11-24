@@ -19,6 +19,16 @@ describe("validarEvento", () => {
     assert.ok(r.ok, JSON.stringify(r));
   });
 
+  test("avisa de las sesiones a las 00:00 (fuentes sin hora)", () => {
+    const r = validarEvento(evento({ sesiones: [{ inicio: "2026-11-22T00:00" }] }), RAIZ);
+    assert.ok(r.avisos.some((a) => a.includes("00:00")));
+  });
+
+  test("acepta carteles de Supabase Storage y rechaza otras URL", () => {
+    assert.ok(validarEvento(evento({ cartel: "https://abc.supabase.co/storage/v1/object/public/carteles/1.jpg" }), null).ok);
+    assert.match(errores(evento({ cartel: "https://otra.web/x.jpg" })).join(), /cartel/);
+  });
+
   test("rechaza categorías que no existen", () => {
     assert.match(errores({ ...evento(), categorias: ["navida"] }).join(), /categorias\.0/);
   });

@@ -2,7 +2,7 @@
 
 Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisiones. Cada punto dice **qué** hacer, **por qué**, **dónde** y **qué me tienes que devolver**. Las variables de entorno van en Vercel (Settings → Environment Variables) y en tu `.env.local` para probar en local. **No me pases claves por el chat.**
 
-Última actualización: bloque 1 (fuentes).
+Última actualización: bloque 2 (importadores).
 
 ## Bloque 1 · Fuentes
 
@@ -27,3 +27,13 @@ Checklist de lo que depende de ti: cuentas, claves, números, contactos y decisi
   - **Devuélveme:** nada. Si quieres, añádelos a `data/fuentes.json` con `"metodo": "envio-directo"`.
 - [ ] **Decidir la frecuencia de revisión** que de verdad puedes asumir. Ahora es semanal para concellos y prensa, y quincenal o mensual para el resto.
   - **Dónde:** en el campo `frecuencia` de `data/fuentes.json`.
+
+## Bloque 2 · Importadores
+
+- [ ] **Probar la importación en local**: `npm run importar -- --simular` y después `npm run importar`.
+  - **Por qué:** para ver qué trae cada fuente antes de dejarla automática. Hoy encuentra unos 8 eventos de Cultura de Galicia y unos 14 de datos.vigo.org.
+  - **Dónde:** en tu ordenador. Los pendientes quedan en `data/pendientes/` y se revisan en `/admin` cuando esté (bloque 6).
+  - **Devuélveme:** si alguna fuente trae ruido (exposiciones largas, programas), dime si la quieres desactivar (`"activa": false`).
+- [ ] **Decidir si importamos las exposiciones y programas largos de Vigo.**
+  - **Por qué:** datos.vigo.org solo da la agenda de hoy y sin hora; muchos son programas de varios meses.
+  - **Devuélveme:** "sí" o "no". Si es no, filtro en el importador los que duran más de una semana.

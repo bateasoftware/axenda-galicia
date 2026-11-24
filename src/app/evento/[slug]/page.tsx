@@ -128,7 +128,18 @@ export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]
               Más planes en {e.concello}
             </Link>
           </Fila>
-          <Fila t="Organiza">{e.organizadores.join(", ")}</Fila>
+          {e.organizadores.length > 0 && (
+            <Fila t="Organiza">
+              {e.organizadores.map((o, i) => (
+                <span key={o}>
+                  {i > 0 && ", "}
+                  <Link href={`/organizador/${slugConcello(o)}`} className="underline decoration-[var(--linea)] underline-offset-2 hover:decoration-current">
+                    {o}
+                  </Link>
+                </span>
+              ))}
+            </Fila>
+          )}
           {e.publico && <Fila t="Para">{e.publico}</Fila>}
           {e.precio && <Fila t="Precio">{e.precio}</Fila>}
           {e.extras?.length ? (
@@ -166,6 +177,20 @@ export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]
         <div className="mt-6">
           <MapaEvento evento={e} />
         </div>
+
+        {(e.fuente.atribucion || e.fuente.url) && (
+          <p className="mt-4 text-xs text-[var(--gris)]">
+            {e.fuente.atribucion ?? "Fuente"}
+            {e.fuente.url && (
+              <>
+                {" · "}
+                <a href={e.fuente.url} target="_blank" rel="noopener nofollow" className="underline">
+                  Ver en la fuente original
+                </a>
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       <aside>

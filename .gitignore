@@ -42,3 +42,6 @@ next-env.d.ts
 
 # ejemplo de variables (sí se sube)
 !.env.example
+
+# contacto de quien envía un cartel (privado, nunca a git)
+data/pendientes/.privado/
