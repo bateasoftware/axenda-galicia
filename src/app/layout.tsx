@@ -44,6 +44,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             ¿Organizas algo? <Link href="/enviar" className="underline">Mándanos el cartel</Link> ·{" "}
             <Link href="/widget" className="underline">La agenda en tu web</Link>
           </p>
+          <p className="mt-1">
+            {/* Sin esto, en la app instalada (sin barra de direcciones) no hay forma de llegar al panel */}
+            <Link href="/admin" prefetch={false} className="underline">Administración</Link>
+          </p>
         </footer>
         <RegistroSW />
       </body>

@@ -3,8 +3,10 @@
 // - /_next/static: caché primero. Los nombres llevan hash, así que nunca cambian.
 // - Carteles e imágenes optimizadas: caché primero y se refresca en segundo plano.
 // - Lo demás (.ics, peticiones RSC, otros orígenes…): directo a la red.
+// - /admin y /api: nunca. Son privados y dependen de la sesión y de redirecciones (el inicio de sesión):
+//   no deben guardarse ni pasar por el service worker.
 // Sube VERSION solo si cambia la lógica de este fichero: se borran las cachés antiguas.
-const VERSION = "v2";
+const VERSION = "v3";
 const PAGINAS = `axenda-paginas-${VERSION}`;
 const ESTATICOS = `axenda-estaticos-${VERSION}`;
 const IMAGENES = `axenda-imagenes-${VERSION}`;
@@ -63,6 +65,7 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/api/")) return;
 
   if (req.mode === "navigate") return e.respondWith(redPrimero(e, req));
   if (url.pathname.startsWith("/_next/static/")) return e.respondWith(cachePrimero(e, req, ESTATICOS, false));

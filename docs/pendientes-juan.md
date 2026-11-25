@@ -29,6 +29,10 @@ Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner cl
 
 ## Cómo se usa el panel `/admin`
 
+- **En el móvil (iPhone):** entra en `https://axenda-galicia.vercel.app/admin` desde Safari, inicia sesión y usa *Compartir → Añadir a pantalla de inicio*. Se instala como una app aparte, **«Axenda Admin»**, que abre directamente el panel. En la web normal también hay un enlace «Administración» al final de la página.
+  - La app instalada en iOS **no comparte la sesión con Safari**: la primera vez tienes que escribir la contraseña dentro de ella. Dura 30 días.
+  - Si tenías añadida antes la web a la pantalla de inicio, bórrala y añade el panel de nuevo.
+
 - **Pendientes** (lo que llega): abre uno, rellena y pulsa **Publicar**. Sin hora, sin coordenadas: solo lo que sepas.
   - **Cuándo:** elige el día. La hora es opcional. Si dura varios días, pon el último en «Hasta el día» y deja las horas vacías. «+ Añadir otro día u horario» para más sesiones.
   - **Dónde:** escribe el nombre del sitio. Si es uno conocido, se pone su ubicación; si no, se usa el centro del concello (aproximada). Las coordenadas son opcionales, dentro de «Coordenadas».
