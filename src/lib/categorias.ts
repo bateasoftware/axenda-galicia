@@ -16,3 +16,8 @@ export const CATEGORIAS: Record<Categoria, { nombre: string; color: string; emoj
   cultura: { nombre: "Cultura", color: "#175cd3", emoji: "📚" },
   comercial: { nombre: "Comercio local", color: "#475467", emoji: "🏪" },
 };
+
+/** Qué ilustración genérica se usa para un evento sin cartel: Navidad tiene preferencia; si no, la primera categoría */
+export function categoriaIlustracion(categorias: readonly Categoria[]): Categoria {
+  return categorias.includes("navidad") ? "navidad" : (categorias[0] ?? "cultura");
+}

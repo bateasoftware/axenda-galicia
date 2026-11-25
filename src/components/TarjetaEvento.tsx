@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import CartelGenerico from "./CartelGenerico";
 import type { Evento } from "@/lib/tipos";
 import { CATEGORIAS } from "@/lib/categorias";
 import { fechaCorta, hora, primerInicio, ultimoFin, dia } from "@/lib/fechas";
@@ -27,8 +28,11 @@ export function TarjetaEvento({ e, pasado = false }: { e: Evento; pasado?: boole
       className={`group flex min-w-0 gap-3 rounded-2xl sm:gap-4 border border-[var(--linea)] bg-white p-3 transition hover:-translate-y-0.5 hover:shadow-md ${pasado ? "opacity-60" : ""}`}
     >
       <div className="relative h-28 w-20 shrink-0 sm:w-24 overflow-hidden rounded-xl bg-[var(--arena)] sm:h-32 sm:w-28">
-        {e.cartel && (
+        {e.cartel ? (
           <Image src={e.cartel} alt={`Cartel: ${e.titulo}`} fill sizes="112px" className="object-cover" />
+        ) : (
+          // Sin cartel: ilustración genérica de su categoría (solo presentación)
+          <CartelGenerico categorias={e.categorias} className="absolute inset-0 h-full w-full" />
         )}
       </div>
       <div className="min-w-0 flex-1">

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { almacen, almacenDisponible, NOMBRE_ALMACEN, type Pendiente } from "@/lib/almacen";
 import { COOKIE_LOTE, type ResultadoLote } from "@/lib/admin/lote";
+import CartelGenerico from "@/components/CartelGenerico";
 import { exigirAdmin } from "@/lib/admin/sesion";
 import { capitalizar, fechaLarga, hora } from "@/lib/fechas";
 import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
@@ -202,7 +203,8 @@ function Tarjeta({ p }: { p: Pendiente }) {
           {p.cartel ? (
             <Image src={p.cartel} alt="" fill sizes="72px" unoptimized className="object-cover" />
           ) : (
-            <span className="grid h-full place-items-center text-2xl">{e.fuente.canal === "ics" ? "📅" : "📄"}</span>
+            // Sin cartel: la ilustración de su categoría, si ya la tiene; si no, un icono
+            e.categorias?.length ? <CartelGenerico categorias={e.categorias} className="absolute inset-0 h-full w-full opacity-80" /> : <span className="grid h-full place-items-center text-2xl">{e.fuente.canal === "ics" ? "📅" : "📄"}</span>
           )}
         </div>
         <div className="min-w-0 flex-1">

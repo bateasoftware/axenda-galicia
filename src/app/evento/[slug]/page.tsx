@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { eventoPorSlug, slugConcello, todosLosEventos } from "@/lib/eventos";
 import { capitalizar, fechaSchema, fechaLarga, hora, primerInicio, ultimoFin, dia } from "@/lib/fechas";
 import { SITIO } from "@/lib/sitio";
+import CartelGenerico from "@/components/CartelGenerico";
 import { EtiquetaCategoria } from "@/components/TarjetaEvento";
 import MapaEvento from "./MapaEvento";
 import AvisoPasado from "./AvisoPasado";
@@ -194,13 +195,15 @@ export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]
       </div>
 
       <aside>
-        {e.cartel && (
+        {e.cartel ? (
           <a href={e.cartel} target="_blank" className="block overflow-hidden rounded-2xl border border-[var(--linea)] bg-white">
             <Image src={e.cartel} alt={`Cartel: ${e.titulo}`} width={680} height={900} className="h-auto w-full" priority />
           </a>
+        ) : (
+          <CartelGenerico categorias={e.categorias} className="aspect-[3/4] w-full rounded-2xl border border-[var(--linea)]" />
         )}
         <p className="mt-2 text-xs text-[var(--gris)]">
-          {e.cartel ? "Cartel facilitado por la organización. " : ""}Comprueba los detalles antes de ir.
+          {e.cartel ? "Cartel facilitado por la organización. " : "Ilustración genérica: este evento no tiene cartel. "}Comprueba los detalles antes de ir.
         </p>
       </aside>
     </article>
