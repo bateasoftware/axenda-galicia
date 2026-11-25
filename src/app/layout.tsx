@@ -6,6 +6,7 @@ import "@fontsource-variable/fraunces";
 import "./globals.css";
 import { SITIO } from "@/lib/sitio";
 import RegistroSW from "@/components/RegistroSW";
+import Analitica from "@/components/Analitica";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITIO.url),
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: SITIO.nombre, statusBarStyle: "default" },
   openGraph: { siteName: SITIO.nombre, locale: "es_ES", type: "website" },
   twitter: { card: "summary_large_image" },
+  // Google Search Console: GOOGLE_SITE_VERIFICATION es el valor de la meta que da Google (ver docs/pendientes-juan.md)
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
 export const viewport: Viewport = { themeColor: "#0b2545" };
@@ -22,7 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className="h-full antialiased">
       <body className="flex min-h-full flex-col font-sans">
-        <header className="sticky top-0 z-[1000] border-b border-[var(--linea)] bg-[var(--fondo)]/90 backdrop-blur">
+        <header className="print:hidden sticky top-0 z-[1000] border-b border-[var(--linea)] bg-[var(--fondo)]/90 backdrop-blur">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
             <Link href="/" aria-label={`${SITIO.nombre}: inicio`} className="flex items-center">
               {/* Logo completo; en pantallas muy estrechas, solo el icono */}
@@ -38,11 +41,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl min-w-0 flex-1 px-4 py-6">{children}</main>
-        <footer className="border-t border-[var(--linea)] py-8 text-center text-sm text-[var(--gris)]">
+        <footer className="print:hidden border-t border-[var(--linea)] py-8 text-center text-sm text-[var(--gris)]">
           <p>{SITIO.nombre} · Agenda de Val Miñor y Vigo · Versión beta</p>
           <p className="mt-1">
             ¿Organizas algo? <Link href="/enviar" className="underline">Mándanos el cartel</Link> ·{" "}
-            <Link href="/widget" className="underline">La agenda en tu web</Link>
+            <Link href="/widget" className="underline">La agenda en tu web</Link> ·{" "}
+            <Link href="/anunciate" className="underline">Anúnciate</Link>
           </p>
           <p className="mt-1">
             {/* Sin esto, en la app instalada (sin barra de direcciones) no hay forma de llegar al panel */}
@@ -50,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </p>
         </footer>
         <RegistroSW />
+        <Analitica />
       </body>
     </html>
   );

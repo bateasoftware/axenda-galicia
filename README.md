@@ -59,7 +59,9 @@ La fecha de recepción se saca del nombre del archivo de WhatsApp (`…PHOTO-202
 | `/enviar` | Formulario para mandar un cartel o programa, WhatsApp y email |
 | `/organizador/[slug]` | Todos los eventos de un organizador |
 | `/widget` | Widget "Agenda de la zona" para insertar en otras webs (`/widget.js`, `/widget/agenda`) |
-| `/admin` | Panel de revisión (contraseña `ADMIN_CLAVE`): pendientes, publicar o descartar y `/admin/cobertura` |
+| `/anunciate` | Media kit con cifras reales para anunciantes y destacados |
+| `/informe/[organizador]/[token]` | Informe privado de un organizador (enlace secreto) |
+| `/admin` | Panel de revisión (contraseña `ADMIN_CLAVE`): pendientes, publicar o descartar, `/admin/publicados`, `/admin/estadisticas` y `/admin/cobertura` |
 | `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest` | SEO y PWA instalable. El service worker guarda las páginas visitadas para verlas sin conexión y sirve desde caché los ficheros estáticos y los carteles |
 
 ## Desarrollo

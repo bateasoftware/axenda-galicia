@@ -27,6 +27,7 @@ export function valoresDe(e: EventoBorrador): Valores {
     inferido: (e.inferido ?? []).join("\n"),
     recurrente: !!e.recurrente,
     comercial: !!e.comercial,
+    destacado_hasta: e.destacado_hasta ?? "",
   };
 }
 

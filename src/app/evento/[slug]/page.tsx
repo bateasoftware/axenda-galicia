@@ -9,6 +9,7 @@ import CartelGenerico from "@/components/CartelGenerico";
 import { EtiquetaCategoria } from "@/components/TarjetaEvento";
 import MapaEvento from "./MapaEvento";
 import AvisoPasado from "./AvisoPasado";
+import { BotonCompartir, EnlaceMedido, VistaEvento } from "./Medicion";
 import type { Evento } from "@/lib/tipos";
 
 export async function generateStaticParams() {
@@ -151,7 +152,11 @@ export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]
           {e.inscripcion && (
             <Fila t="Inscripción">
               {e.inscripcion.hasta && <p>Hasta el {fechaLarga(e.inscripcion.hasta)}</p>}
-              {e.inscripcion.url && <a href={e.inscripcion.url} target="_blank" rel="noopener nofollow" className="text-[var(--mar)] underline">Formulario de inscripción</a>}
+              {e.inscripcion.url && (
+                <EnlaceMedido slug={e.slug} tipo="inscripcion" href={e.inscripcion.url} target="_blank" rel="noopener nofollow" className="text-[var(--mar)] underline">
+                  Formulario de inscripción
+                </EnlaceMedido>
+              )}
               {(e.inscripcion.telefono || e.inscripcion.email) && (
                 <p className="text-sm text-[var(--gris)]">{[e.inscripcion.telefono, e.inscripcion.email].filter(Boolean).join(" · ")}</p>
               )}
@@ -160,20 +165,24 @@ export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]
         </dl>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          <a href={`/evento/${e.slug}/calendario.ics`} className="rounded-full bg-[var(--tinta)] px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+          <EnlaceMedido slug={e.slug} tipo="calendario" href={`/evento/${e.slug}/calendario.ics`} className="rounded-full bg-[var(--tinta)] px-4 py-2 text-sm font-medium text-white hover:opacity-90">
             📅 Añadir a mi calendario
-          </a>
+          </EnlaceMedido>
           {l0 && (
-            <a
+            <EnlaceMedido
+              slug={e.slug}
+              tipo="como-llegar"
               href={`https://www.google.com/maps/dir/?api=1&destination=${l0.lat},${l0.lng}`}
               target="_blank"
               rel="noopener"
               className="rounded-full border border-[var(--linea)] bg-white px-4 py-2 text-sm font-medium hover:border-[var(--tinta)]"
             >
               🧭 Cómo llegar
-            </a>
+            </EnlaceMedido>
           )}
+          <BotonCompartir slug={e.slug} titulo={e.titulo} url={url} />
         </div>
+        <VistaEvento slug={e.slug} />
 
         <div className="mt-6">
           <MapaEvento evento={e} />

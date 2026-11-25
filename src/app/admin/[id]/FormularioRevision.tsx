@@ -29,6 +29,7 @@ export type Valores = {
   inferido: string;
   recurrente: boolean;
   comercial: boolean;
+  destacado_hasta: string;
 };
 
 const campo = "w-full rounded-xl border border-[var(--linea)] bg-white px-3 py-2 text-[15px]";
@@ -316,6 +317,9 @@ export default function FormularioRevision({
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="comercial" defaultChecked={v.comercial} /> Promoción de un negocio
           </label>
+          <Campo etiqueta="Destacado hasta (incluido)" ayuda="Para destacados de pago: sale marcado como «Destacado» hasta ese día y sus cifras se miden aparte. Vacío = normal">
+            <input name="destacado_hasta" type="date" defaultValue={v.destacado_hasta} className={campo} />
+          </Campo>
         </div>
       </details>
 

@@ -98,6 +98,8 @@ export const EventoBase = z.object({
   recurrente: z.boolean().optional(),
   /** true si es promoción de un negocio */
   comercial: z.boolean().optional(),
+  /** Destacado (de pago) hasta ese día incluido, YYYY-MM-DD. Lo pone una persona en el panel, nunca la IA */
+  destacado_hasta: z.string().optional(),
 });
 
 // Forma estricta: la que deben cumplir los eventos publicados.
@@ -143,6 +145,7 @@ export const EventoSchema = z.strictObject({
     .optional(),
   fuente: z.strictObject({ ...FuenteEventoBase.shape, recibido: fechaHora, url: z.url().optional() }),
   confianza: z.number().min(0).max(1),
+  destacado_hasta: z.string().regex(RE_FECHA, "debe ser YYYY-MM-DD").optional(),
 });
 
 export type Sesion = z.infer<typeof SesionSchema>;

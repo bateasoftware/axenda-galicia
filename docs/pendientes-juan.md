@@ -2,7 +2,7 @@
 
 Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner claves y decidir. **No me pases claves por el chat.**
 
-Última actualización: filtro por emisor y descarte por lotes en el panel; sesión de procesado de envíos.
+Última actualización: estadísticas (analítica, Search Console, métricas por evento, informes, destacados y /anunciate).
 
 ## Qué cuesta dinero y qué no
 
@@ -148,6 +148,54 @@ Cada mañana trae solos los eventos de Cultura de Galicia y de la agenda de Vigo
 - [ ] **¿Importamos las exposiciones y programas largos de Vigo?** Su agenda abierta solo da lo de hoy y sin hora. **Devuélveme:** "sí" o "no". Si es no, los filtro.
 - [ ] **Umbral de duplicados.** Ahora: 85 % para no crear otro y 50 % para marcarlo. Avísame si ves falsos positivos.
 
+## Estadísticas y publicidad
+
+Todo sin cookies ni datos personales: **no hace falta banner de consentimiento**.
+
+**Qué hay:**
+- **Métricas propias por evento** (lo que se vende):
+  - visitas a la ficha;
+  - apariciones en la agenda;
+  - clics desde la agenda;
+  - «cómo llegar», «añadir al calendario», «inscripción» y «compartir».
+  Se guardan por día en Turso, ya activas. No cuentan los bots ni tus visitas mientras tienes la sesión del panel abierta.
+- **`/admin/estadisticas`:**
+  - totales del periodo (7, 30, 90 días o un año);
+  - eventos más vistos;
+  - desglose por concello y por categoría;
+  - visitas por semana;
+  - destacados frente a normales;
+  - el enlace del informe de cada organizador.
+- **Informe de organizador:** página con enlace secreto (sin contraseña, fuera de buscadores) con las cifras de sus eventos y una frase lista para enviar («Tu evento tuvo X visitas…»). Se guarda en PDF, se comparte o se descarga en CSV.
+- **Destacados:** en la ficha de un evento (panel) rellena «Destacado hasta». Sale marcado como «Destacado» y sus apariciones y clics se miden aparte.
+- **`/anunciate`:** media kit público con cifras reales de los últimos 30 días.
+  - Mientras haya menos de 100 visitas a fichas, enseña «Estamos empezando» en lugar de cifras pequeñas.
+  - Enlazado en el pie de la web.
+
+**Lo que te toca:**
+
+- [ ] **Activar Vercel Web Analytics y Speed Insights** (gratis en el plan Hobby, con un límite mensual de eventos):
+  - **Dónde:** Vercel → proyecto → pestaña *Analytics* → *Enable*, y pestaña *Speed Insights* → *Enable*.
+  - **Por qué:** son las visitas a toda la web (portada, concellos…), no solo a las fichas. El código ya está puesto; sin activarlas no recogen nada.
+  - **Devuélveme:** nada.
+- [ ] **Dar de alta la web en Google Search Console** (gratis):
+  1. Entra en https://search.google.com/search-console → *Añadir propiedad* → **Prefijo de la URL** → `https://axenda-galicia.vercel.app` (o tu dominio, cuando lo tengas).
+  2. Método de verificación **Etiqueta HTML**. Copia solo el valor de `content="…"` (una cadena larga).
+  3. Ponlo en Vercel como variable `GOOGLE_SITE_VERIFICATION` (Production) y vuelve a desplegar.
+  4. Vuelve a Search Console y pulsa *Verificar*.
+  5. En *Sitemaps*, añade `sitemap.xml` y envía.
+  - **Por qué:** para ver con qué búsquedas llegan y que Google indexe las fichas (y las muestre en su buscador de eventos).
+  - **Devuélveme:** «verificado». Si cambias de dominio, hay que dar de alta el nuevo.
+- [ ] **(Opcional) Poner `INFORMES_SECRETO` en Vercel**, una clave larga (`openssl rand -hex 32`).
+  - Firma los enlaces de los informes de organizadores. Sin ella se usa `ADMIN_CLAVE`, así que **si cambias la contraseña del panel, los enlaces ya enviados dejan de funcionar**. Con `INFORMES_SECRETO` son independientes.
+- [ ] **(Opcional) Plausible o Umami**, si algún día quieres otra analítica en lugar de la de Vercel (o además):
+  - **Plausible:** `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` = tu dominio (de pago; o `NEXT_PUBLIC_PLAUSIBLE_SRC` si lo alojas tú).
+  - **Umami:** `NEXT_PUBLIC_UMAMI_WEBSITE_ID` (Umami Cloud tiene plan gratuito; o `NEXT_PUBLIC_UMAMI_SRC` si lo alojas tú).
+- [ ] **Decidir precios y condiciones** de destacados y patrocinios.
+  - `/anunciate` no pone precios: invita a escribir a `bateasoftware@gmail.com`.
+  - **Devuélveme:** tarifas y duraciones, y las pongo. El pago con Stripe en autoservicio sería otro paso, y tiene comisiones.
+- [ ] **Aviso legal de la publicidad:** los destacados se marcan como «Destacado». Si vendes publicidad, conviene que el aviso legal lo explique. Va con la decisión de privacidad de más abajo.
+
 ## Aparcado (tiene coste): cuando quieras activarlo
 
 ### API de Claude (extracción automática)
@@ -192,6 +240,9 @@ Está preparado para que sea un trámite de unos 20 minutos, sin tocar código:
 | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Base de datos | **Sí** |
 | `ADMIN_CLAVE` | Contraseña del panel `/admin` | **Sí** |
 | `NEXT_PUBLIC_SITE_URL` | Dirección de la web (cuando tengas dominio) | No |
+| `GOOGLE_SITE_VERIFICATION` | Verificación de Google Search Console | Cuando des de alta la web |
+| `INFORMES_SECRETO` | Firma de los enlaces de informes de organizadores | Recomendable |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` / `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | Analítica alternativa | No |
 | `ANTHROPIC_API_KEY` | Extracción automática con IA (de pago) | No (aparcado) |
 | `ENTRADA_SECRETO` | Carteles por email (Apps Script) | Opcional |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Antispam del formulario | Solo si hay spam |

@@ -31,3 +31,14 @@ CREATE TABLE IF NOT EXISTS contactos (
   valor     TEXT NOT NULL,
   creado    TEXT NOT NULL
 );
+
+-- Métricas propias (se crean solas la primera vez que se registra una; ver src/lib/metricas)
+CREATE TABLE IF NOT EXISTS metricas (
+  dia    TEXT NOT NULL,
+  ambito TEXT NOT NULL,
+  clave  TEXT NOT NULL,
+  tipo   TEXT NOT NULL,
+  n      INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (dia, ambito, clave, tipo)
+);
+CREATE INDEX IF NOT EXISTS metricas_ambito ON metricas (ambito, clave, dia);

@@ -11,6 +11,8 @@
  */
 import { almacenTursoDesdeEnv, tursoConfigurado } from "../src/lib/almacen";
 import { importarEnSupabase, supabaseConfigurado } from "../src/lib/almacen/supabase";
+import { clienteTurso } from "../src/lib/almacen/turso";
+import { metricasSupabase, metricasTurso } from "../src/lib/metricas/almacen";
 
 async function main() {
   if (!tursoConfigurado()) return console.log("Falta TURSO_DATABASE_URL (y TURSO_AUTH_TOKEN) en .env.local.");
@@ -22,6 +24,16 @@ async function main() {
   if (process.argv.includes("--simular")) return console.log("Simulación: no se ha copiado nada.");
   const destino = { url: process.env.SUPABASE_URL!, clave: process.env.SUPABASE_SERVICE_ROLE_KEY! };
   await importarEnSupabase(destino, eventos, contactos, (id) => turso.cartel(id));
+
+  // Métricas: se suman, así que solo se copian si Supabase aún no tiene ninguna (para no duplicarlas al repetir)
+  const origen = await metricasTurso(() => clienteTurso()).leer("0000-01-01");
+  const enSupabase = metricasSupabase(destino);
+  if (!origen.length) console.log("Métricas: no hay ninguna en Turso.");
+  else if ((await enSupabase.leer("0000-01-01")).length) console.log("Métricas: Supabase ya tiene; no se copian otra vez (se duplicarían).");
+  else {
+    for (let i = 0; i < origen.length; i += 500) await enSupabase.registrar(origen.slice(i, i + 500));
+    console.log(`Métricas: ${origen.length} contadores copiados.`);
+  }
   console.log("✓ Copiado a Supabase. Revisa /admin y, si está bien, quita las variables de Turso para pasar a usar Supabase.");
 }
 

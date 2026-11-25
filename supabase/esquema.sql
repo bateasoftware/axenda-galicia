@@ -58,3 +58,27 @@ create policy "publico lee publicados" on eventos for select to anon using (esta
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('carteles', 'carteles', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do nothing;
+
+-- Métricas propias (vistas de ficha, clics, apariciones en listados, cómo llegar, calendario, inscripción, compartir).
+-- Solo contadores agregados por día: sin IP, sin navegador, sin identificadores (no hace falta banner de cookies).
+-- ambito: total | evento | organizador | concello | categoria | segmento (destacado/normal)
+create table if not exists metricas (
+  dia    date   not null,
+  ambito text   not null,
+  clave  text   not null,
+  tipo   text   not null,
+  n      bigint not null default 0,
+  primary key (dia, ambito, clave, tipo)
+);
+create index if not exists metricas_ambito on metricas (ambito, clave, dia);
+alter table metricas enable row level security;
+
+-- Suma atómica de contadores (la llama /api/m con la clave de servicio)
+create or replace function sumar_metricas(filas jsonb) returns void
+language sql security definer set search_path = public as $$
+  insert into metricas (dia, ambito, clave, tipo, n)
+  select (f->>'dia')::date, f->>'ambito', f->>'clave', f->>'tipo', (f->>'n')::bigint
+  from jsonb_array_elements(filas) f
+  on conflict (dia, ambito, clave, tipo) do update set n = metricas.n + excluded.n;
+$$;
+revoke execute on function sumar_metricas(jsonb) from public, anon, authenticated;

@@ -89,7 +89,7 @@ export default function Calendario({ eventos, hoy }: { eventos: Evento[]; hoy: s
         {sel ? (
           <>
             <h3 className="mb-3 font-display text-xl">{capitalizar(fechaLarga(sel))}</h3>
-            <div className="space-y-3">{delDia.map((e) => <TarjetaEvento key={e.slug} e={e} />)}</div>
+            <div className="space-y-3">{delDia.map((e) => <TarjetaEvento key={e.slug} e={e} hoy={hoy ?? undefined} />)}</div>
           </>
         ) : (
           <p className="rounded-2xl border border-dashed border-[var(--linea)] p-6 text-[var(--gris)]">

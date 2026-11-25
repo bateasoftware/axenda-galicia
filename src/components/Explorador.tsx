@@ -166,7 +166,7 @@ export default function Explorador({ eventos, concelloFijo }: { eventos: Evento[
                     {/* minmax(0,1fr): sin esto la columna crece con el texto largo y desborda en móvil */}
                     <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
                       {evs.map((e) => (
-                        <TarjetaEvento key={e.slug} e={e} pasado={dia(ultimoFin(e)) < hoy} />
+                        <TarjetaEvento key={e.slug} e={e} pasado={dia(ultimoFin(e)) < hoy} hoy={hoy} />
                       ))}
                     </div>
                   </div>
