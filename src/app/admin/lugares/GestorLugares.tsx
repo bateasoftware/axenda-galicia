@@ -5,7 +5,7 @@ import { useActionState, useMemo, useState } from "react";
 import { enlaceBuscarSitio, enlaceCoordenadas, formatoCoordenadas, parsearCoordenadas } from "@/lib/coordenadas";
 import { claveLugar, type LugarConocido } from "@/lib/lugares";
 import type { Sugerencia } from "@/lib/lugares-sugeridos";
-import { borrarLugar, guardarLugar, type EstadoLugar } from "./acciones";
+import { borrarLugar, guardarLugar, unificarLugar, type EstadoLugar } from "./acciones";
 
 const MapaLugares = dynamic(() => import("./MapaLugares"), {
   ssr: false,
@@ -53,8 +53,9 @@ export default function GestorLugares({
   concellos: string[];
   parroquias: Record<string, string[]>;
   centros: Record<string, [number, number]>;
-  sugerencias: Sugerencia[];
+  sugerencias: (Sugerencia & { parecidos: string[] })[];
 }) {
+  const [unificando, setUnificando] = useState<string | null>(null);
   const [buscar, setBuscar] = useState("");
   const [concello, setConcello] = useState("");
   const [edicion, setEdicion] = useState<Edicion | null>(null);
@@ -230,23 +231,50 @@ export default function GestorLugares({
           <details className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm" open={!edicion}>
             <summary className="cursor-pointer font-medium">Salen en eventos y aún no son habituales ({sugerencias.length})</summary>
             <ul className="mt-2 space-y-1.5">
-              {sugerencias.map((s) => (
-                <li key={`${s.concello}|${s.nombre}`} className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate">
-                    {s.nombre} <span className="text-[var(--gris)]">· {s.concello} · {s.usos} {s.usos === 1 ? "evento" : "eventos"}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      (setMensaje(null),
-                      setEdicion({ nombre: s.nombre, concello: s.concello, parroquia: "", direccion: s.direccion ?? "", coords: formatoCoordenadas(s.lat, s.lng), aprox: s.aprox }))
-                    }
-                    className={boton}
-                  >
-                    Situar
-                  </button>
-                </li>
-              ))}
+              {sugerencias.map((s) => {
+                const k = `${s.concello}|${s.nombre}`;
+                return (
+                  <li key={k} className="rounded-xl bg-white/70 p-2">
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate">
+                        {s.nombre} <span className="text-[var(--gris)]">· {s.concello} · {s.usos} {s.usos === 1 ? "evento" : "eventos"}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          (setMensaje(null),
+                          setEdicion({ nombre: s.nombre, concello: s.concello, parroquia: "", direccion: s.direccion ?? "", coords: formatoCoordenadas(s.lat, s.lng), aprox: s.aprox }))
+                        }
+                        className={boton}
+                        title="Crear un lugar habitual nuevo con este nombre"
+                      >
+                        Situar
+                      </button>
+                    </div>
+                    {s.parecidos.length > 0 && (
+                      <div className="mt-1 text-xs">
+                        ¿Es el mismo que…{" "}
+                        {s.parecidos.map((h) => (
+                          <button
+                            key={h}
+                            type="button"
+                            disabled={unificando === k}
+                            onClick={async () => {
+                              if (!confirm(`¿«${s.nombre}» es «${h}»? Los eventos que usan «${s.nombre}» en ${s.concello} pasarán a «${h}», con sus coordenadas y dirección.`)) return;
+                              setUnificando(k);
+                              setMensaje(await unificarLugar(s.nombre, s.concello, h));
+                              setUnificando(null);
+                            }}
+                            className="mt-1 mr-1 inline-block rounded-full border border-amber-300 bg-white px-2 py-0.5 hover:border-amber-600 disabled:opacity-50"
+                          >
+                            {unificando === k ? "Unificando…" : `«${h}»? Unificar`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </details>
         )}

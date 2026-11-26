@@ -5,7 +5,8 @@ import { almacen } from "@/lib/almacen";
 import { exigirAdmin } from "@/lib/admin/sesion";
 import { parsearCoordenadas } from "@/lib/coordenadas";
 import { ETIQUETA_EVENTOS, eventosDelRepositorio } from "@/lib/eventos";
-import type { LugarConocido } from "@/lib/lugares";
+import { claveLugar, type LugarConocido } from "@/lib/lugares";
+import { lugaresHabituales } from "@/lib/lugares-datos";
 import { propagarLugar } from "@/lib/lugares-propagar";
 
 export type EstadoLugar = { tipo: "inicial" } | { tipo: "error"; mensaje: string } | { tipo: "ok"; mensaje: string };
@@ -48,4 +49,20 @@ export async function borrarLugar(nombre: string, concello: string) {
   await exigirAdmin();
   await almacen().borrarLugar(nombre, concello);
   revalidatePath("/admin/lugares");
+}
+
+/**
+ * Unifica una variante con un lugar habitual («Auditorio de Nigrán» → «Auditorio Municipal de Nigrán»):
+ * los eventos que usan la variante pasan a usar el nombre, las coordenadas y la dirección del habitual.
+ */
+export async function unificarLugar(variante: string, concello: string, habitual: string): Promise<string> {
+  await exigirAdmin();
+  const a = almacen();
+  const lugar = (await lugaresHabituales(a)).find((l) => claveLugar(l.nombre, l.concello) === claveLugar(habitual, concello));
+  if (!lugar) return `No encuentro «${habitual}» en los lugares habituales.`;
+  const n = await propagarLugar(a, lugar, { nombre: variante, concello }, eventosDelRepositorio());
+  if (n.publicados) updateTag(ETIQUETA_EVENTOS);
+  revalidatePath("/admin/lugares");
+  const total = n.publicados + n.pendientes;
+  return `«${variante}» unificado con «${lugar.nombre}»: ${total} ${total === 1 ? "evento actualizado" : "eventos actualizados"}.`;
 }

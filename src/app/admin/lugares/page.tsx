@@ -6,6 +6,7 @@ import { exigirAdmin } from "@/lib/admin/sesion";
 import { todosLosEventos } from "@/lib/eventos";
 import { claveLugar, SEMILLA } from "@/lib/lugares";
 import { lugaresHabituales } from "@/lib/lugares-datos";
+import { lugaresParecidos } from "@/lib/lugares-parecidos";
 import { sugerirLugares } from "@/lib/lugares-sugeridos";
 import GestorLugares from "./GestorLugares";
 
@@ -27,7 +28,11 @@ async function Contenido() {
   const usos: Record<string, number> = {};
   for (const e of eventos) for (const l of e.lugares) usos[claveLugar(l.nombre, e.concello)] = (usos[claveLugar(l.nombre, e.concello)] ?? 0) + 1;
   // Sitios que salen en eventos publicados y aún no son lugares habituales
-  const sugerencias = sugerirLugares(eventos, { concellos: SEMILLA.concellos, lugares }).filter((s) => s.tipo === "nuevo");
+  // (también los pendientes: así se unifican antes de publicarlos) y, para cada uno, los habituales con nombre parecido
+  const pendientes = (await a.pendientes()).map((p) => p.evento).filter((e) => e.concello && e.lugares?.length);
+  const sugerencias = sugerirLugares([...eventos, ...pendientes], { concellos: SEMILLA.concellos, lugares })
+    .filter((s) => s.tipo === "nuevo")
+    .map((s) => ({ ...s, parecidos: lugaresParecidos(s.nombre, s.concello, lugares).map((l) => l.nombre) }));
 
   return (
     <div className="lg:relative lg:left-1/2 lg:w-[min(calc(100vw-3rem),80rem)] lg:-translate-x-1/2">

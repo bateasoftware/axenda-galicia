@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { enlaceBuscarSitio, enlaceCoordenadas, formatoCoordenadas, parsearCoordenadas } from "@/lib/coordenadas";
 import type { FilaLugar } from "@/lib/admin/formulario";
 import type { LugarConocido } from "@/lib/lugares";
+import { lugaresParecidos } from "@/lib/lugares-parecidos";
 
 const campo = "w-full rounded-xl border border-[var(--linea)] bg-white px-3 py-2 text-[15px]";
 const normalizar = (s: string) =>
@@ -13,6 +14,8 @@ const normalizar = (s: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+
+const sinSuscripcion = () => () => {};
 
 /** El concello que hay ahora en el formulario (solo en el navegador) */
 const concelloActual = () => (typeof document === "undefined" ? "" : (document.querySelector<HTMLInputElement>("input[name=concello]")?.value ?? ""));
@@ -41,6 +44,8 @@ export default function FilaLugarEditor({
   const [guardar, setGuardar] = useState(inicial.guardar);
   // Las coordenadas que se pusieron solas: si siguen siendo estas, cambiar de nombre las vuelve a poner
   const [auto, setAuto] = useState("");
+  // Lo que depende del concello escrito en el formulario se calcula solo en el navegador (si no, no coincide con el HTML del servidor)
+  const montado = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   const [habitual, setHabitual] = useState<LugarConocido | null>(() => buscar(inicial.nombre, conocidos));
 
   function buscar(n: string, lista: LugarConocido[]): LugarConocido | null {
@@ -64,6 +69,18 @@ export default function FilaLugarEditor({
     }
   }
 
+  /** Elegir un lugar habitual sugerido: su nombre, coordenadas y dirección */
+  function elegir(l: LugarConocido) {
+    const c = formatoCoordenadas(l.lat, l.lng);
+    setNombre(l.nombre);
+    setHabitual(l);
+    setCoords(c);
+    setAuto(c);
+    setAprox(!!l.aprox);
+    if (l.direccion) setDireccion(l.direccion);
+    setGuardar(false);
+  }
+
   function alCambiarCoords(v: string) {
     setCoords(v);
     // Si se pegan unas coordenadas distintas de las automáticas, se dan por exactas
@@ -72,7 +89,9 @@ export default function FilaLugarEditor({
 
   const c = coords.trim() ? parsearCoordenadas(coords) : null;
   const error = c && "error" in c ? c.error : null;
-  const verEnMaps = c && !("error" in c) ? enlaceCoordenadas(c.lat, c.lng) : enlaceBuscarSitio(nombre || "sitio", concelloActual());
+  const verEnMaps = c && !("error" in c) ? enlaceCoordenadas(c.lat, c.lng) : enlaceBuscarSitio(nombre || "sitio", montado ? concelloActual() : undefined);
+  // Si no es un lugar habitual, los que se llaman parecido (en el mismo concello): quizá es el mismo
+  const parecidos = habitual || !montado ? [] : lugaresParecidos(nombre, concelloActual(), conocidos);
   const igualQueElHabitual = habitual && coords === formatoCoordenadas(habitual.lat, habitual.lng);
 
   return (
@@ -87,6 +106,21 @@ export default function FilaLugarEditor({
           <input name="lug_direccion" value={direccion} onChange={(e) => setDireccion(e.target.value)} className={campo} />
         </label>
       </div>
+      {parecidos.length > 0 && (
+        <div className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
+          <span className="font-medium">¿Es uno de estos lugares habituales?</span>{" "}
+          {parecidos.map((l) => (
+            <button
+              key={`${l.concello}|${l.nombre}`}
+              type="button"
+              onClick={() => elegir(l)}
+              className="mt-1 mr-1 inline-block rounded-full border border-amber-300 bg-white px-2 py-0.5 text-amber-950 hover:border-amber-600"
+            >
+              {l.nombre}
+            </button>
+          ))}
+        </div>
+      )}
       {habitual && igualQueElHabitual && (
         <p className="mt-2 text-xs text-emerald-800">
           ✓ Lugar habitual de {habitual.concello}: coordenadas puestas{habitual.aprox ? " (aproximadas: afínalas en Lugares)" : ""}.
