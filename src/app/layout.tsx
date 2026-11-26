@@ -33,6 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Image src="/marca/icono.png" alt={SITIO.nombre} width={380} height={347} sizes="40px" className="h-9 w-auto min-[420px]:hidden" />
             </Link>
             <nav className="flex items-center gap-1 text-sm">
+              <Link href="/exposiciones" className="rounded-lg px-2 py-1.5 hover:bg-[var(--arena)] sm:px-3">Exposiciones</Link>
               <Link href="/concellos" className="rounded-lg px-2 py-1.5 hover:bg-[var(--arena)] sm:px-3">Concellos</Link>
               <Link href="/enviar" className="rounded-full bg-[var(--mar)] px-3 py-1.5 font-medium whitespace-nowrap text-white hover:opacity-90">
                 + Enviar<span className="hidden sm:inline"> evento</span>

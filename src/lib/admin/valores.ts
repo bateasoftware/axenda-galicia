@@ -30,6 +30,7 @@ export function valoresDe(e: EventoBorrador): Valores {
     recurrente: !!e.recurrente,
     comercial: !!e.comercial,
     destacado_hasta: e.destacado_hasta ?? "",
+    larga_duracion: e.larga_duracion === true ? "1" : e.larga_duracion === false ? "0" : "",
   };
 }
 

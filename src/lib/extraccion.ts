@@ -9,7 +9,7 @@ import { EventoBase } from "./tipos";
 export const MODELO = process.env.MODELO_EXTRACCION ?? "claude-sonnet-5-5";
 
 // Lo que devuelve el modelo: el evento sin los campos que pone quien llama (fuente y cartel)
-export const Extraccion = EventoBase.omit({ fuente: true, cartel: true, destacado_hasta: true });
+export const Extraccion = EventoBase.omit({ fuente: true, cartel: true, destacado_hasta: true, larga_duracion: true });
 export type EventoExtraido = z.infer<typeof Extraccion>;
 
 // Un cartel suele ser un evento; un programa (Navidad, fiestas, boletín) trae muchos

@@ -45,7 +45,7 @@ function useImpresion(slug: string) {
   return ref;
 }
 
-export function TarjetaEvento({ e, pasado = false, hoy }: { e: Evento; pasado?: boolean; hoy?: string }) {
+export function TarjetaEvento({ e, pasado = false, hoy, etiqueta }: { e: Evento; pasado?: boolean; hoy?: string; etiqueta?: string }) {
   const ini = primerInicio(e);
   const fin = ultimoFin(e);
   const variosDias = dia(ini) !== dia(fin);
@@ -70,6 +70,7 @@ export function TarjetaEvento({ e, pasado = false, hoy }: { e: Evento; pasado?: 
         )}
       </div>
       <div className="min-w-0 flex-1">
+        {etiqueta && <span className="mb-1 inline-block rounded-full bg-[var(--arena)] px-2 py-0.5 text-[11px] font-semibold text-[var(--tinta)]">{etiqueta}</span>}
         <p className="text-xs font-semibold uppercase tracking-wide text-[var(--mar)]">
           {fechaCorta(ini)}
           {variosDias && ` – ${fechaCorta(fin)}`}

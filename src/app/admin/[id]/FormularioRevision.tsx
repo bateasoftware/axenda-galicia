@@ -34,6 +34,7 @@ export type Valores = {
   recurrente: boolean;
   comercial: boolean;
   destacado_hasta: string;
+  larga_duracion: "" | "1" | "0";
 };
 
 const campo = "w-full rounded-xl border border-[var(--linea)] bg-white px-3 py-2 text-[15px]";
@@ -314,6 +315,16 @@ export default function FormularioRevision({
               <option value="gl">Gallego</option>
               <option value="es">Castellano</option>
               <option value="mixto">Mixto</option>
+            </select>
+          </Campo>
+          <Campo
+            etiqueta="Duración"
+            ayuda="Las exposiciones y muestras largas no se repiten en la agenda: salen el día que abren, en sus últimos días y en «En curso» y /exposiciones"
+          >
+            <select name="larga_duracion" defaultValue={v.larga_duracion} className={campo}>
+              <option value="">Automática (larga si una sesión dura una semana o más)</option>
+              <option value="1">Larga: exposición, muestra…</option>
+              <option value="0">Normal: sale cada día en la agenda</option>
             </select>
           </Campo>
           <label className="flex items-center gap-2 text-sm">

@@ -100,6 +100,8 @@ export const EventoBase = z.object({
   comercial: z.boolean().optional(),
   /** Destacado (de pago) hasta ese día incluido, YYYY-MM-DD. Lo pone una persona en el panel, nunca la IA */
   destacado_hasta: z.string().optional(),
+  /** Exposición, muestra o feria larga: true/false lo fija una persona; si falta, se deduce de la duración (src/lib/larga-duracion.ts) */
+  larga_duracion: z.boolean().optional(),
 });
 
 // Forma estricta: la que deben cumplir los eventos publicados.

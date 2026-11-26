@@ -3,7 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import type { Evento } from "@/lib/tipos";
 import { CATEGORIAS } from "@/lib/categorias";
-import { capitalizar, diasDelEvento, nombreMes, fechaLarga } from "@/lib/fechas";
+import { capitalizar, dia, diasDelEvento, nombreMes, fechaLarga, primerInicio, ultimoFin } from "@/lib/fechas";
+import { esLargaDuracion } from "@/lib/larga-duracion";
 import { TarjetaEvento } from "./TarjetaEvento";
 
 const SEMANA = ["L", "M", "X", "J", "V", "S", "D"];
@@ -11,7 +12,9 @@ const SEMANA = ["L", "M", "X", "J", "V", "S", "D"];
 export default function Calendario({ eventos, hoy }: { eventos: Evento[]; hoy: string | null }) {
   const porDia = useMemo(() => {
     const m = new Map<string, Evento[]>();
-    for (const e of eventos) for (const d of diasDelEvento(e)) m.set(d, [...(m.get(d) ?? []), e]);
+    // Las exposiciones largas solo marcan el día que abren y el que cierran (si no, llenarían el mes)
+    const dias = (e: Evento) => (esLargaDuracion(e) ? [...new Set([dia(primerInicio(e)), dia(ultimoFin(e))])] : diasDelEvento(e));
+    for (const e of eventos) for (const d of dias(e)) m.set(d, [...(m.get(d) ?? []), e]);
     return m;
   }, [eventos]);
 

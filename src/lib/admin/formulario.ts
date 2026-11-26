@@ -144,8 +144,8 @@ export function formularioAEvento(f: FormData, original: EventoBorrador, tabla: 
   const idioma = texto(f, "idioma");
 
   // Se parte del original sin los opcionales editables, para que borrar un campo lo quite de verdad
-  const { titulo_gl: _a, parroquia: _b, publico: _c, precio: _d, inscripcion: _e, extras: _f, inferido: _g, recurrente: _h, comercial: _i, destacado_hasta: _j, ...base } = original;
-  void [_a, _b, _c, _d, _e, _f, _g, _h, _i, _j];
+  const { titulo_gl: _a, parroquia: _b, publico: _c, precio: _d, inscripcion: _e, extras: _f, inferido: _g, recurrente: _h, comercial: _i, destacado_hasta: _j, larga_duracion: _k, ...base } = original;
+  void [_a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k];
 
   const evento: EventoBorrador = {
     ...base,
@@ -167,6 +167,8 @@ export function formularioAEvento(f: FormData, original: EventoBorrador, tabla: 
     ...(lista(f.get("inferido"), /\n/).length ? { inferido: lista(f.get("inferido"), /\n/) } : {}),
     ...(f.get("recurrente") ? { recurrente: true } : {}),
     ...(f.get("comercial") ? { comercial: true } : {}),
+    // Duración: "" = automática (según fechas), "1" = larga (exposición, muestra…), "0" = normal
+    ...(texto(f, "larga_duracion") === "1" ? { larga_duracion: true } : texto(f, "larga_duracion") === "0" ? { larga_duracion: false } : {}),
     ...(/^\d{4}-\d{2}-\d{2}$/.test(texto(f, "destacado_hasta")) ? { destacado_hasta: texto(f, "destacado_hasta") } : {}),
   };
   return { evento, errores: [...s.errores, ...l.errores], guardarLugares: l.guardar };

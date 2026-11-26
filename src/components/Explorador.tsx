@@ -4,7 +4,9 @@ import dynamic from "next/dynamic";
 import { useMemo, useSyncExternalStore } from "react";
 import type { Categoria, Evento } from "@/lib/tipos";
 import { CATEGORIAS } from "@/lib/categorias";
-import { capitalizar, dia, fechaLarga, hoyGalicia, primerInicio, rangoFinde, ultimoFin } from "@/lib/fechas";
+import Link from "next/link";
+import { capitalizar, dia, fechaCorta, fechaLarga, hoyGalicia, primerInicio, rangoFinde, ultimoFin } from "@/lib/fechas";
+import { abiertoEntre, colocarLarga, esLargaDuracion, NOMBRE_MOMENTO } from "@/lib/larga-duracion";
 import { slugConcello } from "@/lib/slug";
 import { TarjetaEvento } from "./TarjetaEvento";
 import Calendario from "./Calendario";
@@ -84,11 +86,25 @@ export default function Explorador({ eventos, concelloFijo }: { eventos: Evento[
     return dia(primerInicio(e)) <= d && fin >= v;
   });
 
-  const porDia = new Map<string, Evento[]>();
+  // Las exposiciones y eventos largos no se repiten: van el día que abren o en sus últimos días,
+  // y mientras tanto en el bloque «En curso» (con «Todos» se ven como siempre, por su fecha de inicio)
+  const rango: [string, string | null] | null = !hoy || cuando === "todos" ? null : cuando === "finde" ? rangoFinde(hoy) : [hoy, null];
+  const porDia = new Map<string, { e: Evento; etiqueta?: string }[]>();
+  const enCurso: Evento[] = [];
   for (const e of filtrados) {
-    const d = dia(primerInicio(e));
-    porDia.set(d, [...(porDia.get(d) ?? []), e]);
+    let d = dia(primerInicio(e));
+    let etiqueta: string | undefined;
+    if (rango && hoy && esLargaDuracion(e)) {
+      const sitio = colocarLarga(e, hoy, rango[0], rango[1]);
+      if (abiertoEntre(e, rango[0], rango[1] ?? hoy) && dia(primerInicio(e)) <= (rango[1] ?? hoy)) enCurso.push(e);
+      if (!sitio) continue;
+      d = sitio.dia;
+      etiqueta = NOMBRE_MOMENTO[sitio.momento];
+    }
+    porDia.set(d, [...(porDia.get(d) ?? []), { e, etiqueta }]);
   }
+  const dias = [...porDia].sort(([a], [b]) => a.localeCompare(b));
+  enCurso.sort((a, b) => ultimoFin(a).localeCompare(ultimoFin(b)));
 
   const toggleCat = (c: Categoria) => {
     const nuevas = cats.includes(c) ? cats.filter((x) => x !== c) : [...cats, c];
@@ -154,10 +170,11 @@ export default function Explorador({ eventos, concelloFijo }: { eventos: Evento[
         <Esqueleto />
       ) : (
         <>
+          {vista === "lista" && enCurso.length > 0 && <EnCurso eventos={enCurso} hoy={hoy} concello={concello} finde={cuando === "finde"} />}
           {vista === "lista" &&
-            (porDia.size ? (
+            (dias.length ? (
               <div className="space-y-8">
-                {[...porDia].map(([d, evs]) => (
+                {dias.map(([d, evs]) => (
                   <div key={d}>
                     <h2 className="mb-3 font-display text-xl text-[var(--tinta)]">
                       {d === hoy ? "Hoy · " : ""}
@@ -165,8 +182,8 @@ export default function Explorador({ eventos, concelloFijo }: { eventos: Evento[
                     </h2>
                     {/* minmax(0,1fr): sin esto la columna crece con el texto largo y desborda en móvil */}
                     <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
-                      {evs.map((e) => (
-                        <TarjetaEvento key={e.slug} e={e} pasado={dia(ultimoFin(e)) < hoy} hoy={hoy} />
+                      {evs.map(({ e, etiqueta }) => (
+                        <TarjetaEvento key={e.slug} e={e} pasado={dia(ultimoFin(e)) < hoy} hoy={hoy} etiqueta={etiqueta} />
                       ))}
                     </div>
                   </div>
@@ -198,6 +215,39 @@ export default function Explorador({ eventos, concelloFijo }: { eventos: Evento[
         </>
       )}
     </section>
+  );
+}
+
+/** Exposiciones y eventos largos abiertos: plegado, para que no tapen la agenda del día a día */
+function EnCurso({ eventos, hoy, concello, finde }: { eventos: Evento[]; hoy: string; concello: string; finde: boolean }) {
+  const n = eventos.length;
+  return (
+    <details className="group mb-8 rounded-2xl border border-[var(--linea)] bg-white">
+      <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
+        <span className="text-2xl" aria-hidden>
+          🖼️
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-lg text-[var(--tinta)]">
+            {finde ? "Abiertas este finde" : "En curso"}: {n} {n === 1 ? "exposición o muestra" : "exposiciones y muestras"}
+          </span>
+          <span className="block text-sm text-[var(--gris)]">Abiertas durante semanas: cuando te venga bien. Las que cierran antes, primero.</span>
+        </span>
+        <span className="text-sm text-[var(--mar)] group-open:rotate-180" aria-hidden>
+          ▾
+        </span>
+      </summary>
+      <div className="border-t border-[var(--linea)] p-4">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
+          {eventos.map((e) => (
+            <TarjetaEvento key={e.slug} e={e} hoy={hoy} etiqueta={`Hasta el ${fechaCorta(ultimoFin(e))}`} />
+          ))}
+        </div>
+        <Link href={`/exposiciones${concello ? `?concello=${slugConcello(concello)}` : ""}`} className="mt-4 inline-block text-sm font-medium text-[var(--mar)] underline">
+          Todas las exposiciones, también las que abren pronto →
+        </Link>
+      </div>
+    </details>
   );
 }
 
