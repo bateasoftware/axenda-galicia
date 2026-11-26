@@ -174,3 +174,35 @@ describe("lugares habituales", () => {
     assert.equal((await a.lugares()).length, 1);
   });
 });
+
+describe("cambiar un lugar actualiza los eventos que lo usan", () => {
+  test("aplicarLugar: mismo nombre (sin tildes) y concello; renombrar; otro concello no", async () => {
+    const { aplicarLugar } = await import("../src/lib/lugares-propagar");
+    const e = evento({ concello: "Gondomar", lugares: [{ nombre: "praza paradela", lat: 42.1, lng: -8.7, aprox: true }, { nombre: "Otro", lat: 42.2, lng: -8.7 }] });
+    const nuevo = aplicarLugar(e, { nombre: "Praza Paradela", concello: "Gondomar", lat: 42.1081, lng: -8.7599, direccion: "Rúa A" })!;
+    assert.deepEqual(nuevo.lugares[0], { nombre: "Praza Paradela", lat: 42.1081, lng: -8.7599, direccion: "Rúa A" });
+    assert.deepEqual(nuevo.lugares[1], e.lugares[1]);
+    assert.equal(aplicarLugar(nuevo, { nombre: "Praza Paradela", concello: "Gondomar", lat: 42.1081, lng: -8.7599, direccion: "Rúa A" }), null, "ya igual");
+    assert.equal(aplicarLugar(e, { nombre: "Praza Paradela", concello: "Nigrán", lat: 42.14, lng: -8.8 }), null, "otro concello");
+    const renombrado = aplicarLugar(e, { nombre: "Praza de Paradela", concello: "Gondomar", lat: 42.1, lng: -8.76 }, { nombre: "Praza Paradela", concello: "Gondomar" })!;
+    assert.equal(renombrado.lugares[0].nombre, "Praza de Paradela");
+  });
+  test("propagarLugar: publicados y pendientes en Turso", async () => {
+    const { propagarLugar } = await import("../src/lib/lugares-propagar");
+    const a = almacenTurso({ cliente: async () => createClient({ url: ":memory:" }) });
+    const usa = { concello: "Baiona", lugares: [{ nombre: "Local de prueba XYZ", lat: 42.11, lng: -8.84, aprox: true }] };
+    const p1 = await a.crear({ evento: evento({ slug: "uno", ...usa }) });
+    await a.publicar(p1.id, evento({ slug: "uno", ...usa }));
+    await a.crear({ evento: evento({ slug: "dos", ...usa }) });
+    await a.crear({ evento: evento({ slug: "tres" }) });
+    // Uno de data/eventos que también lo usa: pasa a la base de datos con el cambio
+    const repo = [evento({ slug: "del-repo", ...usa }), evento({ slug: "otro-repo" })];
+    const r = await propagarLugar(a, { nombre: "Local de prueba XYZ", concello: "Baiona", lat: 42.1234, lng: -8.8456 }, undefined, repo);
+    assert.deepEqual(r, { publicados: 2, pendientes: 1 });
+    const pubs = await a.publicados();
+    assert.deepEqual(pubs.map((e) => e.slug).sort(), ["del-repo", "uno"]);
+    assert.deepEqual([pubs[0].lugares[0].lat, pubs[0].lugares[0].aprox], [42.1234, undefined]);
+    const pend = (await a.pendientes()).find((p) => p.evento.slug === "dos")!;
+    assert.equal(pend.evento.lugares[0].lng, -8.8456);
+  });
+});

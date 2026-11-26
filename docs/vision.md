@@ -69,5 +69,5 @@ Sin vender activamente. Todo en autoservicio:
 2. Dominio propio, `NEXT_PUBLIC_SITE_URL` y alta en Google Search Console.
 3. Webhook de WhatsApp Business → extracción → `data/pendientes/` (o Supabase).
 4. Panel de revisión protegido.
-5. Newsletter semanal generada a partir de los eventos del finde.
+5. Newsletter semanal generada a partir de los eventos del finde. Incluir una línea «Siguen abiertas» con las exposiciones largas en curso (`repartirLargas` en `src/lib/larga-duracion.ts`).
 6. Páginas SEO adicionales: "este fin de semana en X", "planes con niños en X", "fiestas de [mes] en X".

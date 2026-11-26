@@ -1,10 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { almacen } from "@/lib/almacen";
 import { exigirAdmin } from "@/lib/admin/sesion";
 import { parsearCoordenadas } from "@/lib/coordenadas";
+import { ETIQUETA_EVENTOS, eventosDelRepositorio } from "@/lib/eventos";
 import type { LugarConocido } from "@/lib/lugares";
+import { propagarLugar } from "@/lib/lugares-propagar";
 
 export type EstadoLugar = { tipo: "inicial" } | { tipo: "error"; mensaje: string } | { tipo: "ok"; mensaje: string };
 
@@ -29,9 +31,17 @@ export async function guardarLugar(_previo: EstadoLugar, f: FormData): Promise<E
     ...(f.get("aprox") === "1" ? { aprox: true } : {}),
   };
   const anterior = texto(f, "anterior_nombre") ? { nombre: texto(f, "anterior_nombre"), concello: texto(f, "anterior_concello") } : undefined;
-  await almacen().guardarLugar(lugar, anterior);
+  const a = almacen();
+  await a.guardarLugar(lugar, anterior);
+  // Los eventos que lo usan (publicados y pendientes) se actualizan con las coordenadas nuevas
+  const n = await propagarLugar(a, lugar, anterior, eventosDelRepositorio());
+  if (n.publicados) updateTag(ETIQUETA_EVENTOS);
   revalidatePath("/admin/lugares");
-  return { tipo: "ok", mensaje: `Guardado «${nombre}». Los eventos nuevos ya lo encontrarán; los publicados conservan sus coordenadas.` };
+  const partes = [n.publicados && `${n.publicados} ${n.publicados === 1 ? "evento publicado" : "eventos publicados"}`, n.pendientes && `${n.pendientes} ${n.pendientes === 1 ? "pendiente" : "pendientes"}`].filter(Boolean);
+  return {
+    tipo: "ok",
+    mensaje: `Guardado «${nombre}».${partes.length ? ` Actualizados ${partes.join(" y ")}${n.publicados ? " (la web cambia en unos segundos)" : ""}.` : " Ningún evento lo usaba todavía."}`,
+  };
 }
 
 export async function borrarLugar(nombre: string, concello: string) {

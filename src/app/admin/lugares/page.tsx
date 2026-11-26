@@ -37,7 +37,7 @@ async function Contenido() {
       <h1 className="mt-2 font-display text-3xl">Lugares habituales ({lugares.length})</h1>
       <p className="mt-1 text-sm text-[var(--gris)]">
         Los sitios donde suele haber eventos. Al revisar un evento, escribe su nombre y las coordenadas se ponen solas. Para situarlos: clic en el mapa, o
-        pega las coordenadas de Google Maps (clic derecho sobre el sitio → se copian).
+        pega las coordenadas de Google Maps (clic derecho sobre el sitio → se copian). Al guardar, los eventos que usan ese lugar (publicados y pendientes) se actualizan solos.
       </p>
       <GestorLugares
         lugares={lugares}

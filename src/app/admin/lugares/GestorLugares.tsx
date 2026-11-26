@@ -204,7 +204,7 @@ export default function GestorLugares({
                   type="button"
                   onClick={async () => {
                     const ant = edicion.anterior!;
-                    if (!confirm(`¿Borrar «${ant.nombre}» de los lugares habituales? Los eventos que ya lo usan no cambian.`)) return;
+                    if (!confirm(`¿Borrar «${ant.nombre}» de los lugares habituales? Los eventos que ya lo usan conservan sus coordenadas.`)) return;
                     await borrarLugar(ant.nombre, ant.concello);
                     setEdicion(null);
                     setMensaje(`Borrado «${ant.nombre}».`);
