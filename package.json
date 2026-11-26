@@ -13,6 +13,7 @@
     "test": "tsx --test tests/*.test.ts",
     "revisar-fuentes": "tsx scripts/revisar-fuentes.ts",
     "importar": "tsx --env-file-if-exists=.env.local scripts/importar.ts",
+    "lugares": "tsx --env-file-if-exists=.env.local scripts/lugares.ts",
     "duplicados": "tsx --env-file-if-exists=.env.local scripts/duplicados.ts",
     "migrar-a-supabase": "tsx --env-file-if-exists=.env.local scripts/migrar-a-supabase.ts",
     "subir-pendientes": "tsx --env-file-if-exists=.env.local scripts/subir-pendientes.ts",

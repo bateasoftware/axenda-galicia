@@ -1,6 +1,8 @@
 "use client";
 
-import { startTransition, useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import type { FiltroCola } from "@/lib/admin/cola";
 import type { FilaLugar, FilaSesion } from "@/lib/admin/formulario";
 import { CATEGORIAS } from "@/lib/categorias";
 import { MAX_BYTES_ARCHIVO, reducirImagen } from "@/lib/reducir-imagen";
@@ -67,6 +69,10 @@ export default function FormularioRevision({
   parroquias,
   lugaresConocidos,
   cartelActual,
+  filtro,
+  hayOtros,
+  hrefAnterior,
+  hrefSiguiente,
 }: {
   modo: "pendiente" | "publicado";
   id: string;
@@ -75,7 +81,14 @@ export default function FormularioRevision({
   parroquias: string[];
   lugaresConocidos: string[];
   cartelActual?: string;
+  /** Filtro de la cola (para seguir con el siguiente pendiente al publicar o guardar) */
+  filtro?: FiltroCola;
+  hayOtros?: boolean;
+  hrefAnterior?: string;
+  hrefSiguiente?: string;
 }) {
+  const router = useRouter();
+  const formulario = useRef<HTMLFormElement>(null);
   const accionServidor = modo === "publicado" ? editarPublicado : revisar;
   const [estado, accion, pendiente] = useActionState<EstadoRevision, FormData>(accionServidor.bind(null, id), { tipo: "inicial" });
   const sesiones = useFilas<FilaSesion>(v.sesiones, { dia: "", hora: "", finDia: "", finHora: "", nota: "" });
@@ -97,11 +110,36 @@ export default function FormularioRevision({
     startTransition(() => accion(datos));
   }
 
+  // Atajos: Ctrl/Cmd + Intro publica, Ctrl/Cmd + S guarda, Alt + ↑/↓ cambia de pendiente
+  useEffect(() => {
+    const pulsar = (valor: string) => formulario.current?.querySelector<HTMLButtonElement>(`button[name=accion][value=${valor}]`)?.click();
+    function alPulsar(ev: KeyboardEvent) {
+      const ctrl = ev.ctrlKey || ev.metaKey;
+      if (ctrl && ev.key === "Enter" && modo === "pendiente") {
+        ev.preventDefault();
+        pulsar("publicar");
+      } else if (ctrl && ev.key.toLowerCase() === "s") {
+        ev.preventDefault();
+        pulsar("guardar");
+      } else if (ev.altKey && ev.key === "ArrowDown" && hrefSiguiente) {
+        ev.preventDefault();
+        router.push(hrefSiguiente);
+      } else if (ev.altKey && ev.key === "ArrowUp" && hrefAnterior) {
+        ev.preventDefault();
+        router.push(hrefAnterior);
+      }
+    }
+    window.addEventListener("keydown", alPulsar);
+    return () => window.removeEventListener("keydown", alPulsar);
+  }, [modo, hrefSiguiente, hrefAnterior, router]);
+
   const errores = errorLocal ? [errorLocal] : estado.tipo === "errores" ? estado.errores : [];
 
   return (
-    <form onSubmit={enviar} className="space-y-4">
+    <form ref={formulario} onSubmit={enviar} className="space-y-4">
       <input type="hidden" name="slug" value={v.slug} />
+      {filtro?.emisor && <input type="hidden" name="emisor" value={filtro.emisor} />}
+      {filtro?.ver && <input type="hidden" name="ver" value={filtro.ver} />}
       {errores.length > 0 && (
         <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">
           <p className="font-medium">Revisa esto:</p>
@@ -326,19 +364,28 @@ export default function FormularioRevision({
       <div className="sticky bottom-0 -mx-1 flex gap-2 bg-[var(--fondo)]/95 px-1 py-3 backdrop-blur">
         {modo === "pendiente" ? (
           <>
-            <button name="accion" value="publicar" disabled={pendiente} className="flex-1 rounded-full bg-[var(--mar)] px-4 py-2.5 font-medium text-white disabled:opacity-60">
-              {pendiente ? "Un momento…" : "Publicar"}
+            <button name="accion" value="publicar" disabled={pendiente} title="Ctrl/⌘ + Intro" className="flex-1 rounded-full bg-[var(--mar)] px-4 py-2.5 font-medium text-white disabled:opacity-60">
+              {pendiente ? "Un momento…" : hayOtros ? "Publicar y siguiente" : "Publicar"}
             </button>
-            <button name="accion" value="guardar" disabled={pendiente} className="rounded-full border border-[var(--linea)] bg-white px-4 py-2.5 font-medium disabled:opacity-60">
+            {hayOtros && (
+              <button name="accion" value="guardar-siguiente" disabled={pendiente} className="rounded-full border border-[var(--linea)] bg-white px-4 py-2.5 font-medium disabled:opacity-60">
+                Guardar y siguiente
+              </button>
+            )}
+            <button name="accion" value="guardar" disabled={pendiente} title="Ctrl/⌘ + S" className="rounded-full border border-[var(--linea)] bg-white px-4 py-2.5 font-medium disabled:opacity-60">
               Guardar
             </button>
           </>
         ) : (
-          <button name="accion" value="guardar" disabled={pendiente} className="flex-1 rounded-full bg-[var(--mar)] px-4 py-2.5 font-medium text-white disabled:opacity-60">
+          <button name="accion" value="guardar" disabled={pendiente} title="Ctrl/⌘ + S" className="flex-1 rounded-full bg-[var(--mar)] px-4 py-2.5 font-medium text-white disabled:opacity-60">
             {pendiente ? "Guardando…" : "Guardar cambios"}
           </button>
         )}
       </div>
+      <p className="hidden pb-2 text-xs text-[var(--gris)] lg:block">
+        Atajos: {modo === "pendiente" && <><kbd>Ctrl/⌘ + Intro</kbd> publica · </>}
+        <kbd>Ctrl/⌘ + S</kbd> guarda{modo === "pendiente" && <> · <kbd>Alt + ↑/↓</kbd> cambia de pendiente</>}
+      </p>
     </form>
   );
 }

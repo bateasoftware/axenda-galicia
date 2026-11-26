@@ -4,6 +4,8 @@ import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { almacen, slugLibre, type Almacen } from "@/lib/almacen";
+import { filtrarCola, filtroSeguro, consultaFiltro, ordenarCola, vecinos, type FiltroCola } from "@/lib/admin/cola";
+import { fiablesAhora } from "@/lib/admin/fiables";
 import { formularioAEvento } from "@/lib/admin/formulario";
 import { COOKIE_LOTE, prepararPublicacion, type Omitido, type ResultadoLote } from "@/lib/admin/lote";
 import { COOKIE_PUBLICADO, type ResultadoPublicacion } from "@/lib/admin/publicacion";
@@ -45,7 +47,22 @@ async function guardarCartel(a: Almacen, id: string, f: FormData, estado: "pendi
   }
 }
 
-/** Guarda los cambios o publica, según el botón pulsado ("accion": guardar | publicar) */
+/** El filtro de la cola que viaja con el formulario (campos ocultos emisor y ver) */
+const filtroDe = (f: FormData): FiltroCola => filtroSeguro(String(f.get("emisor") ?? ""), String(f.get("ver") ?? ""));
+
+/** El pendiente que toca después de `id` en la cola filtrada (se calcula antes de publicarlo o descartarlo) */
+async function siguienteDe(a: Almacen, id: string, filtro: FiltroCola) {
+  return vecinos(filtrarCola(ordenarCola(await a.pendientes()), filtro), id).siguiente;
+}
+
+/** Dirección de un pendiente dentro de la cola, con el filtro y un aviso de lo que se acaba de hacer */
+function enCola(id: string, filtro: FiltroCola, aviso: Record<string, string> = {}) {
+  const q = new URLSearchParams(consultaFiltro(filtro).slice(1));
+  for (const [k, v] of Object.entries(aviso)) q.set(k, v);
+  return `/admin/${id}${q.size ? `?${q}` : ""}`;
+}
+
+/** Guarda los cambios o publica, según el botón pulsado ("accion": guardar | guardar-siguiente | publicar) */
 export async function revisar(id: string, _previo: EstadoRevision, f: FormData): Promise<EstadoRevision> {
   await exigirAdmin();
   const a = almacen();
@@ -55,11 +72,16 @@ export async function revisar(id: string, _previo: EstadoRevision, f: FormData):
   const { evento, errores } = formularioAEvento(f, p.evento);
   if (errores.length) return { tipo: "errores", errores };
 
+  const filtro = filtroDe(f);
   if (f.get("accion") !== "publicar") {
     await a.guardar(id, evento);
     const errorCartel = await guardarCartel(a, id, f, "pendiente");
     if (errorCartel) return { tipo: "errores", errores: [errorCartel] };
     const v = validarEvento(evento, null);
+    if (f.get("accion") === "guardar-siguiente") {
+      const siguiente = await siguienteDe(a, id, filtro);
+      if (siguiente && siguiente.id !== id) redirect(enCola(siguiente.id, filtro, { guardado: "1" }));
+    }
     return { tipo: "guardado", avisos: v.ok ? v.avisos : [...v.errores.map((e) => `Para publicar falta: ${e}`), ...v.avisos] };
   }
 
@@ -78,6 +100,7 @@ export async function revisar(id: string, _previo: EstadoRevision, f: FormData):
   await a.guardar(id, evento);
   const errorCartel = await guardarCartel(a, id, f, "pendiente");
   if (errorCartel) return { tipo: "errores", errores: [errorCartel] };
+  const siguiente = await siguienteDe(a, id, filtro);
   const r = await a.publicar(id, limpio);
   updateTag(ETIQUETA_EVENTOS);
 
@@ -99,15 +122,15 @@ export async function revisar(id: string, _previo: EstadoRevision, f: FormData):
   if (r.contacto) await a.olvidarContacto(a.tipo === "local" ? r.slug : id);
 
   const resultado: ResultadoPublicacion = { slug: r.slug, url, mensaje, aviso, avisos: v.avisos.filter((x) => !x.startsWith("deducido")) };
+  // Si no hay nada que contar (avisar a mano, advertencias), se sigue con el siguiente pendiente sin parar
+  const sinNovedades = (aviso.tipo === "ninguno" || aviso.tipo === "whatsapp-enviado") && resultado.avisos.length === 0;
+  if (sinNovedades && siguiente && siguiente.id !== id) redirect(enCola(siguiente.id, filtro, { publicado: r.slug }));
   (await cookies()).set(COOKIE_PUBLICADO, JSON.stringify(resultado), { httpOnly: true, sameSite: "strict", path: "/admin", maxAge: 600, secure: process.env.NODE_ENV === "production" });
   redirect(`/admin/publicado/${r.slug}`);
 }
 
-/** Publica a la vez los pendientes marcados. Se dejan los que necesitan mirarse uno a uno (duplicados, email de aviso, errores). */
-export async function publicarVarios(f: FormData) {
-  await exigirAdmin();
-  const a = almacen();
-  const ids = [...new Set(f.getAll("ids").map(String))].slice(0, 100);
+/** Publica los pendientes dados. Deja los que necesitan mirarse uno a uno (duplicados, email de aviso, errores) y guarda el resultado en una cookie. */
+async function publicarIds(a: Almacen, ids: string[]) {
   const ocupados = new Set((await todosLosEventos()).map((e) => e.slug));
   const omitidos: Omitido[] = [];
   const avisar: ResultadoLote["avisar"] = [];
@@ -148,13 +171,29 @@ export async function publicarVarios(f: FormData) {
 
   const resultado: ResultadoLote = { publicados, omitidos, avisar };
   (await cookies()).set(COOKIE_LOTE, JSON.stringify(resultado), { httpOnly: true, sameSite: "strict", path: "/admin", maxAge: 600, secure: process.env.NODE_ENV === "production" });
-  const emisor = String(f.get("emisor") ?? "");
-  const ver = String(f.get("ver") ?? "");
-  const q = new URLSearchParams();
-  if (/^[a-z0-9-]+$/.test(emisor)) q.set("emisor", emisor);
-  if (/^[a-z]+$/.test(ver)) q.set("ver", ver);
-  q.set("lote", "1");
-  redirect(`/admin?${q}`);
+}
+
+/** Vuelve a la lista con el mismo filtro (solo valores simples) */
+function volverALista(f: FormData, extra: Record<string, string>): never {
+  const q = new URLSearchParams(consultaFiltro(filtroDe(f)).slice(1));
+  for (const [k, v] of Object.entries(extra)) q.set(k, v);
+  redirect(q.size ? `/admin?${q}` : "/admin");
+}
+
+/** Publica a la vez los pendientes marcados */
+export async function publicarVarios(f: FormData) {
+  await exigirAdmin();
+  await publicarIds(almacen(), [...new Set(f.getAll("ids").map(String))].slice(0, 100));
+  volverALista(f, { lote: "1" });
+}
+
+/** Publica de un clic los pendientes que cumplen las reglas de data/reglas.json. Se recalculan aquí: no se fía de lo que traiga el formulario. */
+export async function publicarFiables(f: FormData) {
+  await exigirAdmin();
+  const a = almacen();
+  const fiables = await fiablesAhora(a, await a.pendientes());
+  await publicarIds(a, fiables.slice(0, 100).map((p) => p.id));
+  volverALista(f, { lote: "1" });
 }
 
 /** Descarta a la vez los pendientes marcados en la lista. Los descartados no vuelven a entrar al importar. */
@@ -171,20 +210,18 @@ export async function descartarVarios(f: FormData) {
       console.error("[admin] no se pudo descartar", id, err);
     }
   }
-  // Se vuelve a la misma vista filtrada (solo valores simples)
-  const emisor = String(f.get("emisor") ?? "");
-  const ver = String(f.get("ver") ?? "");
-  const q = new URLSearchParams();
-  if (/^[a-z0-9-]+$/.test(emisor)) q.set("emisor", emisor);
-  if (/^[a-z]+$/.test(ver)) q.set("ver", ver);
-  q.set("descartados", String(n));
-  redirect(`/admin?${q}`);
+  volverALista(f, { descartados: String(n) });
 }
 
-export async function descartar(id: string) {
+export async function descartar(id: string, f: FormData) {
   await exigirAdmin();
-  await almacen().descartar(id);
-  redirect("/admin?descartado=1");
+  const a = almacen();
+  const filtro = filtroDe(f);
+  const siguiente = await siguienteDe(a, id, filtro);
+  await a.descartar(id);
+  // Se sigue con el siguiente pendiente de la cola; si no queda ninguno, a la lista
+  if (siguiente && siguiente.id !== id) redirect(enCola(siguiente.id, filtro, { descartado: "1" }));
+  volverALista(f, { descartado: "1" });
 }
 
 /** Evento publicado: de la base de datos (id) o de data/eventos ("git.<slug>"; en local son los mismos ficheros) */

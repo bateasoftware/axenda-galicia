@@ -7,7 +7,10 @@
  * (los pendientes solo se informan: todavía están en revisión).
  */
 import path from "node:path";
+import { ReglasSchema } from "../src/lib/admin/reglas";
+import { LISTA_CANALES } from "../src/lib/tipos";
 import { leerFuentes } from "../src/lib/fuentes";
+import reglasJSON from "../data/reglas.json";
 import { formatearProblemas, leerEventos, validarLugares } from "../src/lib/validacion";
 
 const RAIZ = process.cwd();
@@ -26,6 +29,17 @@ try {
 } catch (err) {
   fallos++;
   console.log(`✗ data/fuentes.json\n    - ${(err as Error).message.replaceAll("\n", "\n    ")}`);
+}
+
+try {
+  const reglas = ReglasSchema.parse(reglasJSON).autopublicar;
+  const ids = new Set<string>([...LISTA_CANALES, ...leerFuentes().map((f) => f.id)]);
+  const raras = reglas.filter((r) => !ids.has(r.emisor));
+  if (raras.length) throw new Error(`emisor desconocido: ${raras.map((r) => r.emisor).join(", ")}`);
+  console.log(`✓ data/reglas.json (${reglas.length} reglas de publicación rápida)`);
+} catch (err) {
+  fallos++;
+  console.log(`✗ data/reglas.json\n    - ${(err as Error).message.replaceAll("\n", "\n    ")}`);
 }
 
 for (const carpeta of ["eventos", "pendientes"] as const) {

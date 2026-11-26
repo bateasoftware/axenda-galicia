@@ -3,14 +3,17 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { almacen, almacenDisponible, NOMBRE_ALMACEN, type Pendiente } from "@/lib/almacen";
+import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
+import { emisorDe } from "@/lib/admin/reglas";
+import { consultaFiltro, esDuplicado, esPorCompletar, filtrarCola, ordenarCola } from "@/lib/admin/cola";
+import { fiablesAhora } from "@/lib/admin/fiables";
 import { COOKIE_LOTE, type ResultadoLote } from "@/lib/admin/lote";
 import CartelGenerico from "@/components/CartelGenerico";
 import { exigirAdmin } from "@/lib/admin/sesion";
 import { capitalizar, fechaLarga, hora } from "@/lib/fechas";
-import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
 import { validarEvento } from "@/lib/validacion";
 import registroFuentes from "../../../data/fuentes.json";
-import { descartarVarios, salir } from "./acciones";
+import { descartarVarios, publicarFiables, salir } from "./acciones";
 import BarraLote from "./BarraLote";
 
 export default function Admin({ searchParams }: PageProps<"/admin">) {
@@ -54,19 +57,15 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
     }
   }
   // Los más próximos primero: son los que hay que publicar antes
-  const todos = (await a.pendientes()).sort((x, y) => (x.evento.sesiones[0]?.inicio ?? "9").localeCompare(y.evento.sesiones[0]?.inicio ?? "9"));
+  const todos = ordenarCola(await a.pendientes());
+  const fiables = await fiablesAhora(a, todos);
 
   // Emisores: la fuente automática (cultura-gal, vigo-agenda-cultural…) o, si no la hay, el canal (WhatsApp, formulario…)
-  const emisorDe = (p: Pendiente) => p.evento.fuente.id_fuente ?? p.evento.fuente.canal;
   const cuentas = new Map<string, number>();
   for (const p of todos) cuentas.set(emisorDe(p), (cuentas.get(emisorDe(p)) ?? 0) + 1);
   const nombres = new Map(registroFuentes.fuentes.map((f) => [f.id, f.nombre]));
-  const esDuplicado = (p: Pendiente) => p.duplicados.length > 0;
-  const esPorCompletar = (p: Pendiente) => !!p.evento.inferido?.includes(MARCA_POR_COMPLETAR);
 
-  const pendientes = todos
-    .filter((p) => (emisor ? emisorDe(p) === emisor : true))
-    .filter((p) => (ver === "duplicados" ? esDuplicado(p) : ver === "completar" ? esPorCompletar(p) : true));
+  const pendientes = filtrarCola(todos, { emisor, ver });
   const enlace = (params: Record<string, string | undefined>) => {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]);
     return qs.size ? `/admin?${qs}` : "/admin";
@@ -85,6 +84,11 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
           <Link href="/admin/publicados" className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 hover:border-[var(--tinta)]">
             Publicados
           </Link>
+          {pendientes.length > 0 && (
+            <Link href={`/admin/${pendientes[0].id}${consultaFiltro({ emisor, ver })}`} className="rounded-full bg-[var(--tinta)] px-3 py-1.5 text-white lg:hidden">
+              Revisar uno a uno
+            </Link>
+          )}
           <Link href="/admin/estadisticas" className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 hover:border-[var(--tinta)]">
             Estadísticas
           </Link>
@@ -129,6 +133,31 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
             </div>
           )}
         </div>
+      )}
+
+      {fiables.length > 0 && (
+        <form action={publicarFiables} className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--linea)] bg-white p-3 text-sm">
+          <input type="hidden" name="emisor" value={emisor ?? ""} />
+          <input type="hidden" name="ver" value={ver ?? ""} />
+          <p className="min-w-0 flex-1">
+            <b>{fiables.length}</b> {fiables.length === 1 ? "pendiente viene" : "pendientes vienen"} de emisores con historial limpio ({[...new Set(fiables.map(emisorDe))].join(", ")}). Reglas en{" "}
+            <code>data/reglas.json</code>.
+          </p>
+          <button
+            className="rounded-full bg-[var(--mar)] px-4 py-1.5 font-medium text-white hover:opacity-90"
+            title="Publica de una vez los que cumplen las reglas. No toca duplicados ni errores."
+          >
+            Publicar los de confianza ({fiables.length})
+          </button>
+        </form>
+      )}
+      {pendientes.length > 0 && (
+        <p className="mt-4 hidden text-sm text-[var(--gris)] lg:block">
+          En pantallas grandes, al abrir un pendiente verás la cola a la izquierda y el cartel fijo a la derecha.{" "}
+          <Link href={`/admin/${pendientes[0].id}${consultaFiltro({ emisor, ver })}`} className="font-medium text-[var(--mar)] underline">
+            Revisar uno a uno →
+          </Link>
+        </p>
       )}
 
       {todos.length > 0 && (

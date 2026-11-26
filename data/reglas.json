@@ -1,0 +1,4 @@
+{
+  "_nota": "Reglas de publicación rápida (opcionales). Con 'autopublicar' vacío el panel no ofrece nada. Cada regla se aplica a un emisor (el id de una fuente de fuentes.json, o un canal: whatsapp, formulario…). Solo cuenta si ese emisor ya tiene historial: publicados_minimos eventos publicados y, como mucho, descartes_maximos de descartados sobre el total. Los eventos que cumplen se publican con UN clic en /admin («Publicar los de confianza»): nunca solos. Ver docs/reglas-confianza.md.",
+  "autopublicar": []
+}
