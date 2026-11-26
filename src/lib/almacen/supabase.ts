@@ -2,6 +2,7 @@
 // Usa la API REST (PostgREST) con la clave de servicio: solo en el servidor o en scripts, nunca en el cliente.
 import { randomUUID } from "node:crypto";
 import { primerInicio } from "../fechas";
+import { claveLugar, type LugarConocido } from "../lugares";
 import { EventoSchema, type Evento, type EventoBorrador } from "../tipos";
 import { limpiarSlug, slugLibre } from "./local";
 import type { Almacen, ClaveOrigen, Contacto, NuevoPendiente, Pendiente, RegistroCobertura } from "./tipos";
@@ -226,6 +227,27 @@ export function almacenSupabase({ url, clave }: { url: string; clave: string }):
 
     async olvidarContacto(id) {
       await rest(`contactos?evento_id=${eq(id)}`, { method: "DELETE" });
+    },
+
+    async lugares() {
+      const filas = await rest<{ nombre: string; concello: string; parroquia: string | null; direccion: string | null; lat: number; lng: number; aprox: boolean }[]>(
+        "lugares?select=nombre,concello,parroquia,direccion,lat,lng,aprox&order=concello,nombre&limit=5000",
+      );
+      return filas.map((r): LugarConocido => ({ nombre: r.nombre, concello: r.concello, ...(r.parroquia ? { parroquia: r.parroquia } : {}), ...(r.direccion ? { direccion: r.direccion } : {}), lat: r.lat, lng: r.lng, ...(r.aprox ? { aprox: true } : {}) }));
+    },
+
+    async guardarLugar(l, anterior) {
+      if (anterior && claveLugar(anterior.nombre, anterior.concello) !== claveLugar(l.nombre, l.concello))
+        await rest(`lugares?clave=${eq(claveLugar(anterior.nombre, anterior.concello))}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+      await rest("lugares", {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ clave: claveLugar(l.nombre, l.concello), nombre: l.nombre, concello: l.concello, parroquia: l.parroquia ?? null, direccion: l.direccion ?? null, lat: l.lat, lng: l.lng, aprox: !!l.aprox, actualizado: new Date().toISOString() }),
+      });
+    },
+
+    async borrarLugar(nombre, concello) {
+      await rest(`lugares?clave=${eq(claveLugar(nombre, concello))}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
     },
 
     async cobertura() {

@@ -7,6 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { primerInicio } from "../fechas";
+import { claveLugar, type LugarConocido, type TablaLugares } from "../lugares";
 import type { Evento, EventoBorrador } from "../tipos";
 import { sinCamposInternos } from "../validacion";
 import type { Almacen, ClaveOrigen, Contacto, NuevoPendiente, Pendiente, RegistroCobertura } from "./tipos";
@@ -53,6 +54,14 @@ export function almacenLocal(raiz = process.cwd()): Almacen {
   const ENTRADA = path.join(raiz, "data", "entrada");
   const PUBLICOS = path.join(raiz, "public", "carteles");
   const DESCARTADOS = path.join(raiz, "data", "descartados.json");
+  // En local, los lugares habituales son la propia semilla (git es el CMS)
+  const LUGARES = path.join(raiz, "data", "lugares.json");
+  const tablaLugares = () => leerJSON(LUGARES) as TablaLugares;
+  const escribirLugares = (lugares: LugarConocido[]) => {
+    const t = tablaLugares();
+    const ordenados = [...lugares].sort((a, b) => a.concello.localeCompare(b.concello) || a.nombre.localeCompare(b.nombre));
+    fs.writeFileSync(/*turbopackIgnore: true*/ LUGARES, JSON.stringify({ ...t, lugares: ordenados }, null, 2) + "\n");
+  };
 
   const leerJSON = (f: string) => JSON.parse(fs.readFileSync(/*turbopackIgnore: true*/ f, "utf8"));
   const descartados = (): Descartado[] => (fs.existsSync(/*turbopackIgnore: true*/ DESCARTADOS) ? leerJSON(DESCARTADOS) : []);
@@ -282,6 +291,19 @@ export function almacenLocal(raiz = process.cwd()): Almacen {
     async olvidarContacto(idOSlug) {
       fs.rmSync(/*turbopackIgnore: true*/ path.join(PRIVADO, `${idOSlug}.json`), { force: true });
       fs.rmSync(/*turbopackIgnore: true*/ path.join(PRIVADO, `publicado-${idOSlug}.json`), { force: true });
+    },
+
+    async lugares() {
+      return tablaLugares().lugares;
+    },
+
+    async guardarLugar(l, anterior) {
+      const quitar = new Set([claveLugar(l.nombre, l.concello), ...(anterior ? [claveLugar(anterior.nombre, anterior.concello)] : [])]);
+      escribirLugares([...tablaLugares().lugares.filter((x) => !quitar.has(claveLugar(x.nombre, x.concello))), l]);
+    },
+
+    async borrarLugar(nombre, concello) {
+      escribirLugares(tablaLugares().lugares.filter((x) => claveLugar(x.nombre, x.concello) !== claveLugar(nombre, concello)));
     },
 
     async cobertura() {

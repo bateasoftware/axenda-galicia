@@ -5,6 +5,7 @@
 import { randomUUID } from "node:crypto";
 import type { Client, InArgs, InStatement, Row } from "@libsql/client";
 import { primerInicio } from "../fechas";
+import { claveLugar, type LugarConocido } from "../lugares";
 import { EventoSchema, type Evento, type EventoBorrador } from "../tipos";
 import { limpiarSlug, slugLibre } from "./local";
 import type { Almacen, ClaveOrigen, Contacto, ImagenCartel, NuevoPendiente, Pendiente, RegistroCobertura } from "./tipos";
@@ -40,6 +41,17 @@ CREATE TABLE IF NOT EXISTS contactos (
   canal     TEXT NOT NULL CHECK (canal IN ('whatsapp', 'email')),
   valor     TEXT NOT NULL,
   creado    TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS lugares (
+  clave       TEXT PRIMARY KEY,
+  nombre      TEXT NOT NULL,
+  concello    TEXT NOT NULL,
+  parroquia   TEXT,
+  direccion   TEXT,
+  lat         REAL NOT NULL,
+  lng         REAL NOT NULL,
+  aprox       INTEGER NOT NULL DEFAULT 0,
+  actualizado TEXT NOT NULL
 );
 `;
 
@@ -295,6 +307,37 @@ export function almacenTurso({ cliente, subirCartel }: { cliente: () => Promise<
           },
         ];
       });
+    },
+
+    async lugares() {
+      return (await (await db()).execute("SELECT nombre, concello, parroquia, direccion, lat, lng, aprox FROM lugares ORDER BY concello, nombre")).rows.map(
+        (r): LugarConocido => ({
+          nombre: String(r.nombre),
+          concello: String(r.concello),
+          ...(r.parroquia ? { parroquia: String(r.parroquia) } : {}),
+          ...(r.direccion ? { direccion: String(r.direccion) } : {}),
+          lat: Number(r.lat),
+          lng: Number(r.lng),
+          ...(Number(r.aprox) ? { aprox: true } : {}),
+        }),
+      );
+    },
+
+    async guardarLugar(l, anterior) {
+      const sentencias: InStatement[] = [];
+      if (anterior && claveLugar(anterior.nombre, anterior.concello) !== claveLugar(l.nombre, l.concello))
+        sentencias.push({ sql: "DELETE FROM lugares WHERE clave = ?", args: [claveLugar(anterior.nombre, anterior.concello)] });
+      sentencias.push({
+        sql: `INSERT INTO lugares (clave, nombre, concello, parroquia, direccion, lat, lng, aprox, actualizado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(clave) DO UPDATE SET nombre = excluded.nombre, concello = excluded.concello, parroquia = excluded.parroquia, direccion = excluded.direccion,
+                lat = excluded.lat, lng = excluded.lng, aprox = excluded.aprox, actualizado = excluded.actualizado`,
+        args: [claveLugar(l.nombre, l.concello), l.nombre, l.concello, l.parroquia ?? null, l.direccion ?? null, l.lat, l.lng, l.aprox ? 1 : 0, ahora()],
+      });
+      await (await db()).batch(sentencias, "write");
+    },
+
+    async borrarLugar(nombre, concello) {
+      await (await db()).execute({ sql: "DELETE FROM lugares WHERE clave = ?", args: [claveLugar(nombre, concello)] });
     },
 
     async cartel(id) {

@@ -7,6 +7,8 @@ import { almacen, slugLibre, type Almacen } from "@/lib/almacen";
 import { filtrarCola, filtroSeguro, consultaFiltro, ordenarCola, vecinos, type FiltroCola } from "@/lib/admin/cola";
 import { fiablesAhora } from "@/lib/admin/fiables";
 import { formularioAEvento } from "@/lib/admin/formulario";
+import { lugaresHabituales } from "@/lib/lugares-datos";
+import { mismoLugar, tablaCon, type LugarConocido } from "@/lib/lugares";
 import { COOKIE_LOTE, prepararPublicacion, type Omitido, type ResultadoLote } from "@/lib/admin/lote";
 import { COOKIE_PUBLICADO, type ResultadoPublicacion } from "@/lib/admin/publicacion";
 import { abrirSesion, cerrarSesion, claveCorrecta, exigirAdmin } from "@/lib/admin/sesion";
@@ -47,6 +49,16 @@ async function guardarCartel(a: Almacen, id: string, f: FormData, estado: "pendi
   }
 }
 
+/** Guarda como lugares habituales los que se marcaron en el formulario (solo si son nuevos o han cambiado) */
+async function guardarHabituales(a: Almacen, nuevos: LugarConocido[]) {
+  if (!nuevos.length) return;
+  const actuales = await lugaresHabituales(a);
+  for (const l of nuevos) {
+    const igual = actuales.find((x) => mismoLugar(x, l));
+    if (!igual) await a.guardarLugar(l);
+  }
+}
+
 /** El filtro de la cola que viaja con el formulario (campos ocultos emisor y ver) */
 const filtroDe = (f: FormData): FiltroCola => filtroSeguro(String(f.get("emisor") ?? ""), String(f.get("ver") ?? ""));
 
@@ -69,8 +81,10 @@ export async function revisar(id: string, _previo: EstadoRevision, f: FormData):
   const p = await a.pendiente(id);
   if (!p) return { tipo: "errores", errores: ["Este pendiente ya no existe (¿publicado o descartado en otra pestaña?)."] };
 
-  const { evento, errores } = formularioAEvento(f, p.evento);
+  const tabla = tablaCon(await lugaresHabituales(a));
+  const { evento, errores, guardarLugares } = formularioAEvento(f, p.evento, tabla);
   if (errores.length) return { tipo: "errores", errores };
+  await guardarHabituales(a, guardarLugares);
 
   const filtro = filtroDe(f);
   if (f.get("accion") !== "publicar") {
@@ -241,8 +255,10 @@ export async function editarPublicado(id: string, _previo: EstadoRevision, f: Fo
   const actual = await publicadoPorId(a, id);
   if (!actual) return { tipo: "errores", errores: ["Este evento ya no está publicado (¿retirado en otra pestaña?)."] };
 
-  const { evento, errores } = formularioAEvento(f, actual.evento);
+  const tabla = tablaCon(await lugaresHabituales(a));
+  const { evento, errores, guardarLugares } = formularioAEvento(f, actual.evento, tabla);
   if (errores.length) return { tipo: "errores", errores };
+  await guardarHabituales(a, guardarLugares);
   // La dirección de la página no cambia nunca: los enlaces que ya se han compartido siguen funcionando
   const v = validarEvento({ ...evento, slug: actual.evento.slug }, null);
   if (!v.ok) return { tipo: "errores", errores: v.errores };

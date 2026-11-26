@@ -1,16 +1,18 @@
 // Conversión entre un evento y el formulario de revisión de /admin.
 // Todo va en campos sueltos (nada de escribir formatos a mano):
 //  - sesiones: día, hora (opcional), "hasta el día" (opcional), hora de fin (opcional) y nota
-//  - lugares: nombre, dirección (opcional) y coordenadas (opcionales: si faltan, se ponen solas)
-import lugaresJSON from "../../../data/lugares.json";
+//  - lugares: nombre, dirección (opcional) y coordenadas en formato Google Maps («42.1115, -8.7608»), opcionales:
+//    si faltan se usa el lugar habitual con ese nombre o el centro del concello
+import { formatoCoordenadas, parsearCoordenadas } from "../coordenadas";
 import { finValido } from "../fechas";
+import { SEMILLA, type LugarConocido, type TablaLugares } from "../lugares";
 import { LISTA_CATEGORIAS, type Categoria, type EventoBorrador, type Lugar, type Sesion } from "../tipos";
 
 export type FilaSesion = { dia: string; hora: string; finDia: string; finHora: string; nota: string };
-export type FilaLugar = { nombre: string; direccion: string; lat: string; lng: string; aprox: boolean };
+export type FilaLugar = { nombre: string; direccion: string; coords: string; aprox: boolean; guardar: boolean };
 
 export const FILA_SESION_VACIA: FilaSesion = { dia: "", hora: "", finDia: "", finHora: "", nota: "" };
-export const FILA_LUGAR_VACIA: FilaLugar = { nombre: "", direccion: "", lat: "", lng: "", aprox: true };
+export const FILA_LUGAR_VACIA: FilaLugar = { nombre: "", direccion: "", coords: "", aprox: true, guardar: false };
 
 const partirISO = (iso?: string) => ({ dia: iso?.slice(0, 10) ?? "", hora: iso && iso.length > 10 ? iso.slice(11, 16) : "" });
 
@@ -26,7 +28,7 @@ export function sesionesAFilas(sesiones: EventoBorrador["sesiones"]): FilaSesion
 
 export function lugaresAFilas(lugares: EventoBorrador["lugares"]): FilaLugar[] {
   if (!lugares?.length) return [{ ...FILA_LUGAR_VACIA }];
-  return lugares.map((l) => ({ nombre: l.nombre, direccion: l.direccion ?? "", lat: String(l.lat), lng: String(l.lng), aprox: !!l.aprox }));
+  return lugares.map((l) => ({ nombre: l.nombre, direccion: l.direccion ?? "", coords: formatoCoordenadas(l.lat, l.lng), aprox: !!l.aprox, guardar: false }));
 }
 
 const RE_DIA = /^\d{4}-\d{2}-\d{2}$/;
@@ -60,13 +62,11 @@ const normalizar = (s: string) =>
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
-type Tabla = typeof lugaresJSON;
-
 /**
  * Coordenadas de un lugar sin que haya que escribirlas: primero un lugar conocido con ese nombre
  * (data/lugares.json) y, si no, el centro del concello (aproximadas, para revisar en el mapa).
  */
-export function ubicarLugar(nombre: string, concello: string, tabla: Tabla = lugaresJSON): Lugar | null {
+export function ubicarLugar(nombre: string, concello: string, tabla: TablaLugares = SEMILLA): Lugar | null {
   const n = normalizar(nombre);
   const conocido = tabla.lugares.find((l) => normalizar(l.nombre) === n && (!concello || normalizar(l.concello) === normalizar(concello)));
   if (conocido)
@@ -75,26 +75,36 @@ export function ubicarLugar(nombre: string, concello: string, tabla: Tabla = lug
   return c ? { nombre, lat: c[1].lat, lng: c[1].lng, aprox: true } : null;
 }
 
-export function filasALugares(filas: FilaLugar[], concello: string): { lugares: Lugar[]; errores: string[] } {
+export function filasALugares(
+  filas: FilaLugar[],
+  concello: string,
+  tabla: TablaLugares = SEMILLA,
+): { lugares: Lugar[]; errores: string[]; guardar: LugarConocido[] } {
   const lugares: Lugar[] = [];
   const errores: string[] = [];
+  const guardar: LugarConocido[] = [];
   filas.forEach((f, i) => {
     const n = `Lugar ${i + 1}`;
-    if (!f.nombre && !f.direccion && !f.lat && !f.lng) return; // fila vacía
+    if (!f.nombre && !f.direccion && !f.coords.trim()) return; // fila vacía
     if (!f.nombre) return void errores.push(`${n}: escribe el nombre del sitio`);
     const direccion = f.direccion ? { direccion: f.direccion } : {};
-    if (f.lat || f.lng) {
-      const lat = Number(f.lat.replace(",", "."));
-      const lng = Number(f.lng.replace(",", "."));
-      if (!f.lat || !f.lng || Number.isNaN(lat) || Number.isNaN(lng)) return void errores.push(`${n}: las coordenadas necesitan latitud y longitud (o déjalas vacías)`);
-      lugares.push({ nombre: f.nombre, ...direccion, lat, lng, ...(f.aprox ? { aprox: true } : {}) });
-      return;
+    let lugar: Lugar;
+    if (f.coords.trim()) {
+      const c = parsearCoordenadas(f.coords);
+      if ("error" in c) return void errores.push(`${n}: ${c.error}`);
+      lugar = { nombre: f.nombre, ...direccion, lat: c.lat, lng: c.lng, ...(f.aprox ? { aprox: true } : {}) };
+    } else {
+      const u = ubicarLugar(f.nombre, concello, tabla);
+      if (!u) return void errores.push(`${n}: elige el concello para situarlo en el mapa (o pega las coordenadas de Google Maps)`);
+      lugar = { ...u, ...direccion };
     }
-    const u = ubicarLugar(f.nombre, concello);
-    if (!u) return void errores.push(`${n}: elige el concello para situarlo en el mapa (o escribe las coordenadas)`);
-    lugares.push({ ...u, ...direccion });
+    lugares.push(lugar);
+    if (f.guardar) {
+      if (!concello) errores.push(`${n}: para guardarlo como lugar habitual, elige el concello`);
+      else guardar.push({ nombre: lugar.nombre, concello, ...(lugar.direccion ? { direccion: lugar.direccion } : {}), lat: lugar.lat, lng: lugar.lng, ...(lugar.aprox ? { aprox: true } : {}) });
+    }
   });
-  return { lugares, errores };
+  return { lugares, errores, guardar };
 }
 
 const lista = (v: FormDataEntryValue | null, sep: RegExp) =>
@@ -113,15 +123,15 @@ export function leerSesiones(f: FormData): FilaSesion[] {
 }
 
 export function leerLugares(f: FormData): FilaLugar[] {
-  const [nombre, direccion, lat, lng, aprox] = ["lug_nombre", "lug_direccion", "lug_lat", "lug_lng", "lug_aprox"].map((k) => columna(f, k));
-  return nombre.map((nom, i) => ({ nombre: nom, direccion: direccion[i] ?? "", lat: lat[i] ?? "", lng: lng[i] ?? "", aprox: aprox[i] !== "0" }));
+  const [nombre, direccion, coords, aprox, guardar] = ["lug_nombre", "lug_direccion", "lug_coords", "lug_aprox", "lug_guardar"].map((k) => columna(f, k));
+  return nombre.map((nom, i) => ({ nombre: nom, direccion: direccion[i] ?? "", coords: coords[i] ?? "", aprox: aprox[i] !== "0", guardar: guardar[i] === "1" }));
 }
 
 /** Lee el formulario sobre el evento original (que aporta fuente, confianza y lo no editable) */
-export function formularioAEvento(f: FormData, original: EventoBorrador): { evento: EventoBorrador; errores: string[] } {
+export function formularioAEvento(f: FormData, original: EventoBorrador, tabla: TablaLugares = SEMILLA): { evento: EventoBorrador; errores: string[]; guardarLugares: LugarConocido[] } {
   const concello = texto(f, "concello");
   const s = filasASesiones(leerSesiones(f));
-  const l = filasALugares(leerLugares(f), concello);
+  const l = filasALugares(leerLugares(f), concello, tabla);
   const opcional = (k: string) => texto(f, k) || undefined;
   const inscripcion = {
     url: opcional("inscripcion_url"),
@@ -159,5 +169,5 @@ export function formularioAEvento(f: FormData, original: EventoBorrador): { even
     ...(f.get("comercial") ? { comercial: true } : {}),
     ...(/^\d{4}-\d{2}-\d{2}$/.test(texto(f, "destacado_hasta")) ? { destacado_hasta: texto(f, "destacado_hasta") } : {}),
   };
-  return { evento, errores: [...s.errores, ...l.errores] };
+  return { evento, errores: [...s.errores, ...l.errores], guardarLugares: l.guardar };
 }

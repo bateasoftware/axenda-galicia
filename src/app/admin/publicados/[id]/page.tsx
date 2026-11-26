@@ -48,7 +48,7 @@ async function Editor({ params, searchParams }: Pick<PageProps<"/admin/publicado
       )}
 
       <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1fr)_260px]">
-        <FormularioRevision modo="publicado" id={id} valores={valoresDe(e)} {...apoyoFormulario} cartelActual={e.cartel} />
+        <FormularioRevision modo="publicado" id={id} valores={valoresDe(e)} {...(await apoyoFormulario(a))} cartelActual={e.cartel} />
         <aside className="order-first md:order-none">
           {e.cartel ? (
             <div className="overflow-hidden rounded-2xl border border-[var(--linea)] bg-white">

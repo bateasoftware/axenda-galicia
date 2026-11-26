@@ -35,7 +35,8 @@ Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner cl
 
 - **Pendientes** (lo que llega): abre uno, rellena y pulsa **Publicar**. Sin hora, sin coordenadas: solo lo que sepas.
   - **Cuándo:** elige el día. La hora es opcional. Si dura varios días, pon el último en «Hasta el día» y deja las horas vacías. «+ Añadir otro día u horario» para más sesiones.
-  - **Dónde:** escribe el nombre del sitio. Si es uno conocido, se pone su ubicación; si no, se usa el centro del concello (aproximada). Las coordenadas son opcionales, dentro de «Coordenadas».
+  - **Dónde:** escribe el nombre del sitio. Si es un **lugar habitual** (aparece en la lista al escribir), sus coordenadas y dirección se ponen solas. Si no, pega las coordenadas de Google Maps tal cual (clic derecho sobre el sitio en Google Maps → se copian, p. ej. `42.1115, -8.7608`) o déjalas vacías (centro del concello, aproximado). Marca **«Guardar como lugar habitual»** y la próxima vez ya estará. Hay un enlace «Buscar en Google Maps» con el nombre del sitio.
+  - **Lugares** (botón arriba, `/admin/lugares`): mapa con todos los lugares habituales (azul exacto, naranja aproximado). Clic en uno para editarlo, clic en el mapa para colocarlo o crear uno nuevo ahí. Cambiar un lugar no toca los eventos ya publicados.
   - **Sin cartel:** los eventos sin imagen muestran una ilustración genérica de su categoría (Navidad tiene preferencia). Es solo presentación: no se guarda nada y desaparece sola cuando subes un cartel.
   - **Cartel:** si no tiene, «Añadir un cartel» sube una imagen (se reduce sola). Si ya tiene, «Cambiar el cartel».
   - **Filtrar por emisor:** debajo del título hay un botón por cada origen (`vigo-agenda-cultural`, `cultura-gal`, WhatsApp, formulario…) con su número de pendientes, y filtros para «Posibles duplicados» y «Por completar».
@@ -135,7 +136,7 @@ Cada mañana trae solos los eventos de Cultura de Galicia y de la agenda de Vigo
 - [ ] **Revisar las fuentes "sin verificar".** Ejecuta `npm run revisar-fuentes -- --todas` para verlas.
   - **Cuáles:** Cines da Ramallosa, Biblioteca de Baiona, Mancomunidade de Val Miñor (su web daba error), Turismo Rías Baixas, redes y prensa.
   - **Qué hacer:** corrige la URL en `data/fuentes.json` y pon `"estado": "verificada"`, o pásame la URL buena.
-- [ ] **Completar los lugares.** Ejecuta `npm run lugares` para ver qué sitios salen en los eventos y no están en `data/lugares.json` (ahora mismo 9, todos con coordenadas aproximadas). Busca cada uno en Google Maps, y cuando tengas las coordenadas exactas ponlas en el editor (Coordenadas → Precisión «Exacta») o pásamelas. Luego `npm run lugares -- --aplicar` los añade a la tabla y los siguientes eventos ya salen bien situados.
+- [ ] **Completar los lugares** en `/admin/lugares` (botón «Lugares» del panel). Arriba a la derecha salen los sitios que aparecen en eventos y aún no son habituales: «Situar», clic en el mapa donde está (o pega las coordenadas de Google Maps) y «Guardar». Los naranjas del mapa son aproximados: ábrelos y afínalos igual. La primera vez se cargan solos los de `data/lugares.json`.
 - [ ] **Escribir a concellos, asociaciones, ANPAs y clubes.** El guion está en `docs/fuentes.md`. Empieza por https://concellodegondomar.gal/asociacions/culturais/.
   - **Por qué:** que te manden ellos los carteles es lo que más eventos trae.
   - **Devuélveme:** si alguno tiene un calendario de Google o un ICS: lo añado como fuente automática.

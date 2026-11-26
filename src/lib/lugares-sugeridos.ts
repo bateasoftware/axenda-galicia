@@ -2,10 +2,10 @@
 // aunque algún evento ya trae coordenadas exactas). Sirve para ir completando la tabla de sitios,
 // que es un activo del proyecto: cuanto más completa, mejor mapa y menos trabajo al revisar.
 import { normalizar } from "./importar/ubicar";
+import { claveLugar, type TablaLugares } from "./lugares";
 import type { Lugar } from "./tipos";
 
-export type LugarConocido = { nombre: string; concello: string; lat: number; lng: number; direccion?: string; aprox?: boolean };
-export type TablaLugares = { _nota?: string; concellos: Record<string, unknown>; lugares: LugarConocido[] };
+export type { LugarConocido, TablaLugares } from "./lugares";
 export type EventoConLugares = { concello: string; lugares: Lugar[] };
 
 export type Sugerencia = {
@@ -26,7 +26,7 @@ const mediana = (xs: number[]) => {
   return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
 };
 const redondear = (n: number) => Math.round(n * 1e5) / 1e5;
-const clave = (nombre: string, concello: string) => `${normalizar(concello)}|${normalizar(nombre)}`;
+const clave = claveLugar;
 
 export function sugerirLugares(eventos: EventoConLugares[], tabla: TablaLugares): Sugerencia[] {
   const grupos = new Map<string, { nombre: string; concello: string; puntos: Lugar[] }>();

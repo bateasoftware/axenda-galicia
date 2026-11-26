@@ -32,6 +32,7 @@ async function Editor({ params, searchParams }: Pick<PageProps<"/admin/[id]">, "
   if (!p) notFound();
   const e = p.evento;
   const v = validarEvento(e, null);
+  const apoyo = await apoyoFormulario(a);
   const cola = filtrarCola(ordenarCola(todos), filtro);
   const { anterior, siguiente, indice } = vecinos(cola, id);
   const consulta = consultaFiltro(filtro);
@@ -147,7 +148,7 @@ async function Editor({ params, searchParams }: Pick<PageProps<"/admin/[id]">, "
           modo="pendiente"
           id={p.id}
           valores={valoresDe(e)}
-          {...apoyoFormulario}
+          {...apoyo}
           cartelActual={p.cartel}
           filtro={filtro}
           hayOtros={!!siguiente && siguiente.id !== id}

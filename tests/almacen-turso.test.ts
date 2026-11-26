@@ -153,3 +153,24 @@ describe("almacenTurso", () => {
     assert.deepEqual(await a.slugsRetirados(), ["otro-del-repo"]);
   });
 });
+
+describe("lugares habituales", () => {
+  test("crear, editar, renombrar y borrar", async () => {
+    const a = almacenTurso({ cliente: async () => createClient({ url: ":memory:" }) });
+    assert.deepEqual(await a.lugares(), []);
+    await a.guardarLugar({ nombre: "Praza Paradela", concello: "Gondomar", lat: 42.1115, lng: -8.7608, aprox: true });
+    await a.guardarLugar({ nombre: "Auditorio", concello: "Nigrán", lat: 42.14, lng: -8.8, direccion: "Rúa X", parroquia: "Nigrán" });
+    // La misma clave (sin tildes ni mayúsculas) actualiza en vez de duplicar
+    await a.guardarLugar({ nombre: "PRAZA PARADELA", concello: "gondomar", lat: 42.1116, lng: -8.7609 });
+    let todos = await a.lugares();
+    assert.equal(todos.length, 2);
+    const praza = todos.find((l) => l.concello === "gondomar")!;
+    assert.deepEqual([praza.lat, praza.aprox], [42.1116, undefined]);
+    // Renombrar sustituye el anterior
+    await a.guardarLugar({ nombre: "Auditorio Municipal", concello: "Nigrán", lat: 42.14, lng: -8.8 }, { nombre: "Auditorio", concello: "Nigrán" });
+    todos = await a.lugares();
+    assert.deepEqual(todos.map((l) => l.nombre).sort(), ["Auditorio Municipal", "PRAZA PARADELA"]);
+    await a.borrarLugar("auditorio municipal", "Nigrán");
+    assert.equal((await a.lugares()).length, 1);
+  });
+});

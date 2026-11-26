@@ -82,3 +82,18 @@ language sql security definer set search_path = public as $$
   on conflict (dia, ambito, clave, tipo) do update set n = metricas.n + excluded.n;
 $$;
 revoke execute on function sumar_metricas(jsonb) from public, anon, authenticated;
+
+-- Lugares habituales (sitios con coordenadas, que se eligen al revisar un evento). Se editan en /admin/lugares.
+-- clave = concello y nombre sin tildes ni mayúsculas (la calcula la app).
+create table if not exists lugares (
+  clave       text primary key,
+  nombre      text not null,
+  concello    text not null,
+  parroquia   text,
+  direccion   text,
+  lat         double precision not null,
+  lng         double precision not null,
+  aprox       boolean not null default false,
+  actualizado timestamptz not null default now()
+);
+alter table lugares enable row level security;

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { filasALugares } from "./admin/formulario";
 import { limpiarSlug } from "./almacen/local";
+import type { TablaLugares } from "./lugares";
 import { InscripcionBase, LISTA_CANALES, LISTA_CATEGORIAS, SesionBase, type Canal, type EventoBorrador } from "./tipos";
 import { validarEvento } from "./validacion";
 
@@ -36,6 +37,8 @@ export type Contexto = {
   canal: Canal;
   /** YYYY-MM-DDTHH:MM, hora de Galicia */
   recibido: string;
+  /** Lugares habituales (los de la base de datos); si falta, la semilla de data/lugares.json */
+  tabla?: TablaLugares;
   /** Enlace de donde sale el evento, si lo hay */
   url?: string;
 };
@@ -52,11 +55,12 @@ export function construirBorrador(entrada: unknown, ctx: Contexto): { evento?: E
     m.lugares.map((l) => ({
       nombre: l.nombre,
       direccion: l.direccion ?? "",
-      lat: l.lat === undefined ? "" : String(l.lat),
-      lng: l.lng === undefined ? "" : String(l.lng),
+      coords: l.lat === undefined && l.lng === undefined ? "" : `${l.lat ?? ""}, ${l.lng ?? ""}`,
       aprox: l.aprox ?? false,
+      guardar: false,
     })),
     m.concello,
+    ctx.tabla,
   );
   if (lugares.errores.length) return { errores: lugares.errores, avisos: [] };
 

@@ -41,22 +41,41 @@ describe("lugares sin escribir coordenadas", () => {
     assert.equal(l?.aprox, true);
   });
   test("lugar nuevo: centro del concello, aproximadas", () => {
-    const { lugares, errores } = filasALugares([{ nombre: "Parque da Ramallosa", direccion: "", lat: "", lng: "", aprox: true }], "Nigrán");
+    const { lugares, errores } = filasALugares([{ nombre: "Parque da Ramallosa", direccion: "", coords: "", aprox: true, guardar: false }], "Nigrán");
     assert.deepEqual(errores, []);
     assert.equal(lugares[0].nombre, "Parque da Ramallosa");
     assert.equal(lugares[0].aprox, true);
     assert.ok(Math.abs(lugares[0].lat - 42.1417) < 0.01);
   });
   test("sin concello ni coordenadas, pide el concello (no las coordenadas)", () => {
-    const { errores } = filasALugares([{ nombre: "Parque", direccion: "", lat: "", lng: "", aprox: true }], "");
+    const { errores } = filasALugares([{ nombre: "Parque", direccion: "", coords: "", aprox: true, guardar: false }], "");
     assert.match(errores[0], /elige el concello/);
   });
-  test("coordenadas escritas a mano (con coma decimal) y dirección", () => {
-    const { lugares, errores } = filasALugares([{ nombre: "Praza", direccion: "Rúa X", lat: "42,1115", lng: "-8,7608", aprox: false }], "");
+  test("coordenadas pegadas de Google Maps y dirección", () => {
+    const { lugares, errores } = filasALugares([{ nombre: "Praza", direccion: "Rúa X", coords: "42.1115, -8.7608", aprox: false, guardar: false }], "");
     assert.deepEqual(errores, []);
     assert.deepEqual(lugares, [{ nombre: "Praza", direccion: "Rúa X", lat: 42.1115, lng: -8.7608 }]);
   });
-  test("solo una coordenada es un error", () => assert.match(filasALugares([{ nombre: "P", direccion: "", lat: "42", lng: "", aprox: true }], "Nigrán").errores[0], /latitud y longitud/));
+  test("coordenadas mal puestas: errores que explican qué pasa", () => {
+    const mal = (coords: string) => filasALugares([{ nombre: "P", direccion: "", coords, aprox: true, guardar: false }], "Nigrán").errores[0];
+    assert.match(mal("42.1"), /no entiendo/);
+    assert.match(mal("-8.7608, 42.1115"), /al revés/);
+    assert.match(mal("40.4, -3.7"), /Galicia/);
+  });
+  test("un lugar habitual de la tabla da sus coordenadas, aunque no sea el de la semilla", () => {
+    const tabla = { concellos: {}, lugares: [{ nombre: "Local social", concello: "Baiona", lat: 42.12, lng: -8.85, direccion: "Rúa A" }] };
+    const { lugares } = filasALugares([{ nombre: "local SOCIAL", direccion: "", coords: "", aprox: true, guardar: false }], "Baiona", tabla);
+    assert.deepEqual(lugares, [{ nombre: "Local social", lat: 42.12, lng: -8.85, direccion: "Rúa A" }]);
+  });
+  test("guardar como lugar habitual: solo lo marcado y con concello", () => {
+    const filas = [
+      { nombre: "Praza", direccion: "", coords: "42.1115, -8.7608", aprox: false, guardar: true },
+      { nombre: "Otro", direccion: "", coords: "42.2, -8.7", aprox: true, guardar: false },
+    ];
+    const r = filasALugares(filas, "Gondomar");
+    assert.deepEqual(r.guardar, [{ nombre: "Praza", concello: "Gondomar", lat: 42.1115, lng: -8.7608 }]);
+    assert.match(filasALugares(filas, "").errores[0], /elige el concello/);
+  });
   test("ida y vuelta conserva si era aproximada", () => {
     const lugares = [{ nombre: "Praza", lat: 42.1, lng: -8.7, aprox: true }, { nombre: "Auditorio", lat: 42.14, lng: -8.8 }];
     assert.deepEqual(filasALugares(lugaresAFilas(lugares), "Nigrán").lugares, lugares);
@@ -76,8 +95,7 @@ describe("formularioAEvento", () => {
   f.set("ses_nota", "");
   f.set("lug_nombre", "Parque da Ramallosa");
   f.set("lug_direccion", "");
-  f.set("lug_lat", "");
-  f.set("lug_lng", "");
+  f.set("lug_coords", "");
   f.set("lug_aprox", "1");
   f.set("concello", "Nigrán");
   f.set("organizadores", "ANPA, Concello de Nigrán");

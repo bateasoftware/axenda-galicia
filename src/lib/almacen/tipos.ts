@@ -2,6 +2,7 @@
 // Dos implementaciones con la misma interfaz:
 //  - local: ficheros en data/pendientes y data/eventos (scripts y desarrollo; git como CMS)
 //  - supabase: tablas y Storage (lo que usa Vercel, donde no se puede escribir en disco)
+import type { LugarConocido } from "../lugares";
 import type { Canal, Evento, EventoBorrador } from "../tipos";
 
 /** Datos de quien envía. PRIVADOS: solo para avisarle al publicar; nunca se publican ni van a un PR. */
@@ -82,4 +83,9 @@ export interface Almacen {
   /** Marca que ya se avisó al remitente (y borra su contacto) */
   olvidarContacto(id: string): Promise<void>;
   cobertura(): Promise<RegistroCobertura[]>;
+  /** Lugares habituales (sitios con coordenadas) que se editan en /admin/lugares */
+  lugares(): Promise<LugarConocido[]>;
+  /** Crea o actualiza un lugar. Si cambia su nombre o concello, `anterior` es el que había (se sustituye). */
+  guardarLugar(lugar: LugarConocido, anterior?: { nombre: string; concello: string }): Promise<void>;
+  borrarLugar(nombre: string, concello: string): Promise<void>;
 }

@@ -9,7 +9,7 @@
  *
  * Los carteles guardados en Turso se suben al bucket "carteles" de Supabase; los de Vercel Blob se quedan donde están.
  */
-import { almacenTursoDesdeEnv, tursoConfigurado } from "../src/lib/almacen";
+import { almacenSupabase, almacenTursoDesdeEnv, tursoConfigurado } from "../src/lib/almacen";
 import { importarEnSupabase, supabaseConfigurado } from "../src/lib/almacen/supabase";
 import { clienteTurso } from "../src/lib/almacen/turso";
 import { metricasSupabase, metricasTurso } from "../src/lib/metricas/almacen";
@@ -34,6 +34,11 @@ async function main() {
     for (let i = 0; i < origen.length; i += 500) await enSupabase.registrar(origen.slice(i, i + 500));
     console.log(`Métricas: ${origen.length} contadores copiados.`);
   }
+  // Lugares habituales: se guardan por clave, así que repetirlo no duplica
+  const lugares = await turso.lugares();
+  const supabase = almacenSupabase(destino);
+  for (const l of lugares) await supabase.guardarLugar(l);
+  console.log(`Lugares habituales: ${lugares.length} copiados.`);
   console.log("✓ Copiado a Supabase. Revisa /admin y, si está bien, quita las variables de Turso para pasar a usar Supabase.");
 }
 

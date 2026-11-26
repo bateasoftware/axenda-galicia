@@ -7,6 +7,8 @@ import type { FilaLugar, FilaSesion } from "@/lib/admin/formulario";
 import { CATEGORIAS } from "@/lib/categorias";
 import { MAX_BYTES_ARCHIVO, reducirImagen } from "@/lib/reducir-imagen";
 import { LISTA_CATEGORIAS, type Categoria } from "@/lib/tipos";
+import type { LugarConocido } from "@/lib/lugares";
+import FilaLugarEditor from "./FilaLugarEditor";
 import { editarPublicado, revisar, type EstadoRevision } from "../acciones";
 
 export type Valores = {
@@ -79,7 +81,7 @@ export default function FormularioRevision({
   valores: Valores;
   concellos: string[];
   parroquias: string[];
-  lugaresConocidos: string[];
+  lugaresConocidos: LugarConocido[];
   cartelActual?: string;
   /** Filtro de la cola (para seguir con el siguiente pendiente al publicar o guardar) */
   filtro?: FiltroCola;
@@ -92,7 +94,7 @@ export default function FormularioRevision({
   const accionServidor = modo === "publicado" ? editarPublicado : revisar;
   const [estado, accion, pendiente] = useActionState<EstadoRevision, FormData>(accionServidor.bind(null, id), { tipo: "inicial" });
   const sesiones = useFilas<FilaSesion>(v.sesiones, { dia: "", hora: "", finDia: "", finHora: "", nota: "" });
-  const lugares = useFilas<FilaLugar>(v.lugares, { nombre: "", direccion: "", lat: "", lng: "", aprox: true });
+  const lugares = useFilas<FilaLugar>(v.lugares, { nombre: "", direccion: "", coords: "", aprox: true, guardar: false });
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
 
   async function enviar(ev: React.FormEvent<HTMLFormElement>) {
@@ -234,52 +236,17 @@ export default function FormularioRevision({
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium">Dónde</legend>
         <p className="text-xs text-[var(--gris)]">
-          Escribe solo el nombre del sitio. Si es uno conocido se pone su ubicación; si no, se usa el centro del concello (aproximada) y puedes afinarla en
-          «Coordenadas».
+          Escribe el nombre del sitio: si es un lugar habitual se rellenan solas sus coordenadas. Si no, pega las de Google Maps (o déjalas vacías: se usa
+          el centro del concello, aproximado) y marca «Guardar como lugar habitual» para tenerlo la próxima vez.
         </p>
         {lugares.filas.map(({ k, f }, i) => (
-          <div key={k} className="rounded-xl border border-[var(--linea)] bg-white p-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-xs text-[var(--gris)]">Sitio</span>
-                <input name="lug_nombre" defaultValue={f.nombre} list="lugares-conocidos" placeholder="Parque da Ramallosa" className={campo} />
-              </label>
-              <label className="block">
-                <span className="text-xs text-[var(--gris)]">Dirección (opcional)</span>
-                <input name="lug_direccion" defaultValue={f.direccion} className={campo} />
-              </label>
-            </div>
-            <details className="mt-2 text-sm">
-              <summary className="cursor-pointer text-[var(--mar)]">Coordenadas (opcional)</summary>
-              <div className="mt-2 grid grid-cols-3 gap-3">
-                <label className="block">
-                  <span className="text-xs text-[var(--gris)]">Latitud</span>
-                  <input name="lug_lat" defaultValue={f.lat} inputMode="decimal" placeholder="42.1115" className={campo} />
-                </label>
-                <label className="block">
-                  <span className="text-xs text-[var(--gris)]">Longitud</span>
-                  <input name="lug_lng" defaultValue={f.lng} inputMode="decimal" placeholder="-8.7608" className={campo} />
-                </label>
-                <label className="block">
-                  <span className="text-xs text-[var(--gris)]">Precisión</span>
-                  <select name="lug_aprox" defaultValue={f.aprox ? "1" : "0"} className={campo}>
-                    <option value="1">Aproximada</option>
-                    <option value="0">Exacta</option>
-                  </select>
-                </label>
-              </div>
-              <p className="mt-1 text-xs text-[var(--gris)]">Si las dejas vacías se calculan solas. En Google Maps: clic derecho sobre el sitio y se copian las coordenadas.</p>
-            </details>
-            {lugares.filas.length > 1 && (
-              <button type="button" onClick={() => lugares.quitar(k)} className={`${boton} mt-2`} aria-label={`Quitar el lugar ${i + 1}`}>
-                Quitar este sitio
-              </button>
-            )}
-          </div>
+          <FilaLugarEditor key={k} inicial={f} indice={i} conocidos={lugaresConocidos} puedeQuitar={lugares.filas.length > 1} onQuitar={() => lugares.quitar(k)} />
         ))}
         <datalist id="lugares-conocidos">
           {lugaresConocidos.map((l) => (
-            <option key={l} value={l} />
+            <option key={`${l.concello}|${l.nombre}`} value={l.nombre}>
+              {l.concello}
+            </option>
           ))}
         </datalist>
         <button type="button" onClick={lugares.anadir} className={boton}>

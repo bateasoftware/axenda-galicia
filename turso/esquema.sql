@@ -42,3 +42,16 @@ CREATE TABLE IF NOT EXISTS metricas (
   PRIMARY KEY (dia, ambito, clave, tipo)
 );
 CREATE INDEX IF NOT EXISTS metricas_ambito ON metricas (ambito, clave, dia);
+
+-- Lugares habituales (se editan en /admin/lugares; la primera vez se rellenan con data/lugares.json)
+CREATE TABLE IF NOT EXISTS lugares (
+  clave       TEXT PRIMARY KEY,
+  nombre      TEXT NOT NULL,
+  concello    TEXT NOT NULL,
+  parroquia   TEXT,
+  direccion   TEXT,
+  lat         REAL NOT NULL,
+  lng         REAL NOT NULL,
+  aprox       INTEGER NOT NULL DEFAULT 0,
+  actualizado TEXT NOT NULL
+);

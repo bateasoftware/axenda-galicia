@@ -1,5 +1,7 @@
 // Valores iniciales del formulario de revisión a partir de un evento (pendiente o publicado).
-import lugaresJSON from "../../../data/lugares.json";
+import type { Almacen } from "../almacen";
+import { SEMILLA } from "../lugares";
+import { lugaresHabituales } from "../lugares-datos";
 import type { Valores } from "@/app/admin/[id]/FormularioRevision";
 import type { EventoBorrador } from "../tipos";
 import { lugaresAFilas, sesionesAFilas } from "./formulario";
@@ -31,9 +33,11 @@ export function valoresDe(e: EventoBorrador): Valores {
   };
 }
 
-/** Datos de apoyo del formulario: concellos, parroquias y sitios conocidos (data/lugares.json) */
-export const apoyoFormulario = {
-  concellos: Object.keys(lugaresJSON.concellos),
-  parroquias: [...new Set(Object.values(lugaresJSON.concellos).flatMap((c) => c.parroquias))].sort(),
-  lugaresConocidos: lugaresJSON.lugares.map((l) => l.nombre),
-};
+/** Datos de apoyo del formulario: concellos y parroquias (data/lugares.json) y los lugares habituales (base de datos) */
+export async function apoyoFormulario(a: Almacen) {
+  return {
+    concellos: Object.keys(SEMILLA.concellos),
+    parroquias: [...new Set(Object.values(SEMILLA.concellos).flatMap((c) => c.parroquias))].sort(),
+    lugaresConocidos: await lugaresHabituales(a),
+  };
+}

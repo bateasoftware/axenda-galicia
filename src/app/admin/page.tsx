@@ -92,6 +92,9 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
           <Link href="/admin/estadisticas" className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 hover:border-[var(--tinta)]">
             Estadísticas
           </Link>
+          <Link href="/admin/lugares" className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 hover:border-[var(--tinta)]">
+            Lugares
+          </Link>
           <Link href="/admin/cobertura" className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 hover:border-[var(--tinta)]">
             Cobertura
           </Link>

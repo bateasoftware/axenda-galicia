@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import { almacen, NOMBRE_ALMACEN } from "../src/lib/almacen";
 import { CANALES_VALIDOS, construirBorrador } from "../src/lib/anadir";
+import { tablaDeLugares } from "../src/lib/lugares-datos";
 import { buscadorDuplicados } from "../src/lib/duplicados";
 import { fechaHoraGalicia } from "../src/lib/fechas";
 import { normalizarCartel } from "../src/lib/imagen";
@@ -36,7 +37,10 @@ async function main() {
 
   const bruto = JSON.parse(fs.readFileSync(archivo, "utf8"));
   const lista: unknown[] = Array.isArray(bruto) ? bruto : [bruto];
-  const construidos = lista.map((x) => construirBorrador(x, { canal, recibido, url: opcion("--url") }));
+  const destino = almacen();
+  // Los sitios se sitúan con los lugares habituales de la base de datos (/admin/lugares)
+  const tabla = await tablaDeLugares(destino).catch(() => undefined);
+  const construidos = lista.map((x) => construirBorrador(x, { canal, recibido, url: opcion("--url"), tabla }));
   const conErrores = construidos.filter((c) => c.errores.length);
   if (conErrores.length) {
     construidos.forEach((c, i) => c.errores.forEach((e) => console.log(`✗ evento ${i + 1}: ${e}`)));
@@ -52,7 +56,6 @@ async function main() {
     hash = n.hash;
   }
 
-  const destino = almacen();
   console.log(`Destino: ${NOMBRE_ALMACEN[destino.tipo]}${simular ? " (simulación: no se guarda nada)" : ""}`);
   if (hash && (await destino.yaVisto({ hash }))) return console.log("= Este cartel ya estaba (mismo archivo): no se añade otra vez.");
 
