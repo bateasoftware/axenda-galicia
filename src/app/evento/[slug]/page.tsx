@@ -212,7 +212,7 @@ export default async function PaginaEvento({ params }: PageProps<"/evento/[slug]
           <CartelGenerico categorias={e.categorias} className="aspect-[3/4] w-full rounded-2xl border border-[var(--linea)]" />
         )}
         <p className="mt-2 text-xs text-[var(--gris)]">
-          {e.cartel ? "Cartel facilitado por la organización. " : "Ilustración genérica: este evento no tiene cartel. "}Comprueba los detalles antes de ir.
+          {e.cartel ? "" : "Ilustración genérica: este evento no tiene cartel. "}Comprueba los detalles antes de ir.
         </p>
       </aside>
     </article>
