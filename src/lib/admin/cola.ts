@@ -1,5 +1,6 @@
 // La cola de pendientes del panel: filtros, orden y vecinos (anterior/siguiente) para revisar uno tras otro.
 import type { Pendiente } from "../almacen";
+import { fechaHoraGalicia, haTerminado } from "../fechas";
 import { MARCA_POR_COMPLETAR } from "../sin-ia";
 import { enlaceOrigen, sinHora } from "./origen";
 import { emisorDe } from "./reglas";
@@ -8,6 +9,11 @@ export type FiltroCola = { emisor?: string; ver?: string };
 
 export const esDuplicado = (p: Pendiente) => p.duplicados.length > 0;
 export const esPorCompletar = (p: Pendiente) => !!p.evento.inferido?.includes(MARCA_POR_COMPLETAR);
+/** Ya pasó: todas sus sesiones han terminado (sin hora, al acabar el día; sin fin, cuenta el inicio). `ahora` es hora de Galicia. */
+export function esPasado(p: Pendiente, ahora = fechaHoraGalicia()): boolean {
+  const ss = p.evento.sesiones ?? [];
+  return ss.length > 0 && ss.every((x) => haTerminado(x.fin ?? x.inicio, ahora));
+}
 export const esSinEnlace = (p: Pendiente) => !enlaceOrigen(p.evento);
 export const esSinImagen = (p: Pendiente) => !p.cartel;
 export const esSinHora = (p: Pendiente) => sinHora(p.evento);
@@ -16,6 +22,7 @@ export const esSinHora = (p: Pendiente) => sinHora(p.evento);
 export const VER: Record<string, (p: Pendiente) => boolean> = {
   duplicados: esDuplicado,
   completar: esPorCompletar,
+  pasados: (p) => esPasado(p),
   sinenlace: esSinEnlace,
   sinimagen: esSinImagen,
   sinhora: esSinHora,

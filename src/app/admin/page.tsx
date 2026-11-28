@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { almacen, almacenDisponible, NOMBRE_ALMACEN, type Pendiente } from "@/lib/almacen";
 import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
 import { emisorDe } from "@/lib/admin/reglas";
-import { consultaFiltro, esDuplicado, esPorCompletar, esSinEnlace, esSinHora, esSinImagen, filtrarCola, ordenarCola } from "@/lib/admin/cola";
+import { consultaFiltro, esDuplicado, esPasado, esPorCompletar, esSinEnlace, esSinHora, esSinImagen, filtrarCola, ordenarCola } from "@/lib/admin/cola";
 import { busquedasDe, enlaceOrigen } from "@/lib/admin/origen";
 import { fiablesAhora } from "@/lib/admin/fiables";
 import { COOKIE_LOTE, type ResultadoLote } from "@/lib/admin/lote";
@@ -14,7 +14,7 @@ import { exigirAdmin } from "@/lib/admin/sesion";
 import { capitalizar, fechaLarga, hora } from "@/lib/fechas";
 import { validarEvento } from "@/lib/validacion";
 import registroFuentes from "../../../data/fuentes.json";
-import { descartarVarios, publicarFiables, salir } from "./acciones";
+import { descartarPasados, descartarVarios, publicarFiables, salir } from "./acciones";
 import BarraLote from "./BarraLote";
 
 export default function Admin({ searchParams }: PageProps<"/admin">) {
@@ -187,6 +187,7 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
             </Link>
             {(
               [
+                ["pasados", "⌛ Ya pasaron", (p: Pendiente) => esPasado(p)],
                 ["sinenlace", "🔗 Sin enlace de origen", esSinEnlace],
                 ["sinimagen", "🖼 Sin imagen", esSinImagen],
                 ["sinhora", "🕒 Sin hora", esSinHora],
@@ -198,6 +199,15 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
             ))}
           </div>
         </div>
+      )}
+
+      {todos.some((p) => esPasado(p)) && (
+        <form action={descartarPasados} className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <input type="hidden" name="emisor" value={emisor ?? ""} />
+          <input type="hidden" name="ver" value={ver ?? ""} />
+          <button className="rounded-full border border-red-300 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50">Descartar los {todos.filter((p) => esPasado(p)).length} que ya pasaron</button>
+          <span className="text-[var(--gris)]">No vuelven a entrar al importar.</span>
+        </form>
       )}
 
       {!pendientes.length && (

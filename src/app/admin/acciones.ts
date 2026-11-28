@@ -4,7 +4,8 @@ import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { almacen, slugLibre, type Almacen } from "@/lib/almacen";
-import { filtrarCola, filtroSeguro, consultaFiltro, ordenarCola, vecinos, type FiltroCola } from "@/lib/admin/cola";
+import { esPasado, filtrarCola, filtroSeguro, consultaFiltro, ordenarCola, vecinos, type FiltroCola } from "@/lib/admin/cola";
+import { fechaHoraGalicia } from "@/lib/fechas";
 import { fiablesAhora } from "@/lib/admin/fiables";
 import { formularioAEvento } from "@/lib/admin/formulario";
 import { lugaresHabituales } from "@/lib/lugares-datos";
@@ -222,6 +223,24 @@ export async function descartarVarios(f: FormData) {
       n++;
     } catch (err) {
       console.error("[admin] no se pudo descartar", id, err);
+    }
+  }
+  volverALista(f, { descartados: String(n) });
+}
+
+/** Descarta todos los pendientes cuya fecha ya pasó (a mano desde la lista; a diario lo hace también `npm run descartar-pasados`) */
+export async function descartarPasados(f: FormData) {
+  await exigirAdmin();
+  const a = almacen();
+  const ahora = fechaHoraGalicia();
+  let n = 0;
+  for (const p of await a.pendientes()) {
+    if (!esPasado(p, ahora)) continue;
+    try {
+      await a.descartar(p.id);
+      n++;
+    } catch (err) {
+      console.error("[admin] no se pudo descartar", p.id, err);
     }
   }
   volverALista(f, { descartados: String(n) });

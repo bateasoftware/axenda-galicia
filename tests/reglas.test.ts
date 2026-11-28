@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Pendiente, RegistroCobertura } from "../src/lib/almacen";
-import { esDuplicado, filtrarCola, filtroSeguro, ordenarCola, vecinos } from "../src/lib/admin/cola";
+import { esDuplicado, esPasado, filtrarCola, filtroSeguro, ordenarCola, vecinos } from "../src/lib/admin/cola";
 import { ReglaSchema, cumpleRegla, historialPorEmisor, pendientesDeConfianza } from "../src/lib/admin/reglas";
 import { slugLibre } from "../src/lib/almacen";
 import { evento as eventoBase } from "./ayudas";
@@ -69,4 +69,17 @@ test("cola: orden por fecha, filtros y vecinos", () => {
   assert.equal(vecinos(cola, "c").siguiente?.id, "b", "al final, se vuelve al anterior");
   assert.equal(vecinos(cola, "z").siguiente?.id, "a", "si ya no está, el primero");
   assert.deepEqual(filtroSeguro("cultura-gal", "../x"), { emisor: "cultura-gal", ver: undefined });
+});
+
+test("cola: un pendiente ya pasó cuando todas sus sesiones han terminado", () => {
+  const ahora = "2026-11-28T12:00";
+  const p = (sesiones: { inicio: string; fin?: string }[]) => pend("x", { sesiones });
+  assert.equal(esPasado(p([{ inicio: "2026-11-27T20:00" }]), ahora), true);
+  assert.equal(esPasado(p([{ inicio: "2026-11-28T10:00" }]), ahora), true, "hoy, pero ya empezó sin fin");
+  assert.equal(esPasado(p([{ inicio: "2026-11-28T20:00" }]), ahora), false);
+  assert.equal(esPasado(p([{ inicio: "2026-11-28" }]), ahora), false, "sin hora: dura todo el día");
+  assert.equal(esPasado(p([{ inicio: "2026-11-27" }]), ahora), true);
+  assert.equal(esPasado(p([{ inicio: "2026-11-01", fin: "2026-12-20" }]), ahora), false, "exposición en curso");
+  assert.equal(esPasado(p([{ inicio: "2026-11-20T18:00" }, { inicio: "2026-12-05T18:00" }]), ahora), false, "le queda una sesión");
+  assert.equal(esPasado(p([]), ahora), false);
 });
