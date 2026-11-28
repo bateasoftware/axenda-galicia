@@ -128,13 +128,13 @@ export default function FilaLugarEditor({
       )}
       <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem]">
         <label className="block">
-          <span className="text-xs text-[var(--gris)]">Coordenadas (opcional): pega las de Google Maps</span>
+          <span className="text-xs text-[var(--gris)]">Coordenadas (opcional): pega las de Google Maps o su plus code</span>
           <input
             name="lug_coords"
             value={coords}
             onChange={(e) => alCambiarCoords(e.target.value)}
             inputMode="decimal"
-            placeholder="42.1115, -8.7608"
+            placeholder="42.1115, -8.7608 o 8CJH466Q+JM"
             aria-invalid={!!error}
             className={`${campo} ${error ? "border-red-400" : ""}`}
           />

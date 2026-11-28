@@ -1,6 +1,30 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { enlaceBuscarSitio, enlaceCoordenadas, formatoCoordenadas, parsearCoordenadas } from "../src/lib/coordenadas";
+import { plusCodeACoordenadas, enlaceBuscarSitio, enlaceCoordenadas, formatoCoordenadas, parsearCoordenadas } from "../src/lib/coordenadas";
+
+describe("plus codes", () => {
+  const cerca = (c: [number, number] | null, lat: number, lng: number) => {
+    assert.ok(c && Math.abs(c[0] - lat) < 2e-4 && Math.abs(c[1] - lng) < 2e-4, `${c} no está cerca de ${lat}, ${lng}`);
+  };
+  test("código completo (el ejemplo de la especificación está en Zúrich)", () => {
+    cerca(plusCodeACoordenadas("8FVC9G8F+6W"), 47.365562, 8.524813);
+  });
+  test("código corto con el nombre del lugar detrás, como lo enseña Google Maps", () => {
+    cerca(plusCodeACoordenadas("9G8F+6W Zürich", { lat: 47.4, lng: 8.5 }), 47.365562, 8.524813);
+    cerca(plusCodeACoordenadas("9g8f+6w, Zürich, Suiza", { lat: 47.4, lng: 8.5 }), 47.365562, 8.524813);
+  });
+  test("en Galicia: completo, corto y desde parsearCoordenadas", () => {
+    cerca(plusCodeACoordenadas("8CJH466Q+JM"), 42.1115, -8.7608);
+    cerca(plusCodeACoordenadas("466Q+JM Nigrán"), 42.1115, -8.7608);
+    const c = parsearCoordenadas("466Q+JM Nigrán, Pontevedra") as { lat: number; lng: number };
+    cerca([c.lat, c.lng], 42.1115, -8.7608);
+  });
+  test("no se confunde con otros textos", () => {
+    assert.equal(plusCodeACoordenadas("hola+adios"), null);
+    assert.equal(plusCodeACoordenadas("466Q+J"), null);
+    assert.match((parsearCoordenadas("hola+adios") as { error: string }).error, /no entiendo/);
+  });
+});
 
 describe("coordenadas estilo Google Maps", () => {
   test("lo que se copia de Google Maps", () => {

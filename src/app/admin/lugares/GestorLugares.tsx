@@ -168,7 +168,7 @@ export default function GestorLugares({
                   onChange={(e) => setEdicion({ ...edicion, coords: e.target.value, aprox: false })}
                   required
                   inputMode="decimal"
-                  placeholder="42.1115, -8.7608"
+                  placeholder="42.1115, -8.7608 o 8CJH466Q+JM"
                   aria-invalid={!!(c && "error" in c)}
                   className={`${campo} ${c && "error" in c ? "border-red-400" : ""}`}
                 />
@@ -183,7 +183,7 @@ export default function GestorLugares({
             </div>
             <p className="text-xs text-[var(--gris)]">
               {c && "error" in c ? <span className="text-red-700">{c.error}. </span> : null}
-              Pega las de Google Maps o haz clic en el mapa.{" "}
+              Pega las de Google Maps (o su plus code) o haz clic en el mapa.{" "}
               <a
                 href={punto ? enlaceCoordenadas(punto[0], punto[1]) : enlaceBuscarSitio(edicion.nombre || "sitio", edicion.concello)}
                 target="_blank"
