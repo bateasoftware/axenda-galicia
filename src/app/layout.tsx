@@ -4,6 +4,7 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/space-grotesk";
 import "./globals.css";
 import { SITIO } from "@/lib/sitio";
+import Actualizar from "@/components/Actualizar";
 import RegistroSW from "@/components/RegistroSW";
 import Analitica from "@/components/Analitica";
 import { Logotipo, Simbolo } from "@/components/Marca";
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/enviar" className="rounded-full bg-[var(--tinta)] px-3 py-1.5 font-medium whitespace-nowrap text-white hover:opacity-90">
                 + Enviar<span className="hidden sm:inline"> evento</span>
               </Link>
+              <Actualizar />
             </nav>
           </div>
         </header>

@@ -19,6 +19,8 @@
 }
 
 body {
+  /* El gesto de deslizar para actualizar lo hace la propia página (components/Actualizar.tsx), igual en navegador y en la PWA */
+  overscroll-behavior-y: contain;
   background: var(--fondo);
   color: var(--tinta);
 }
