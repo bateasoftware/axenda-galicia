@@ -1,12 +1,25 @@
 // La cola de pendientes del panel: filtros, orden y vecinos (anterior/siguiente) para revisar uno tras otro.
 import type { Pendiente } from "../almacen";
 import { MARCA_POR_COMPLETAR } from "../sin-ia";
+import { enlaceOrigen, sinHora } from "./origen";
 import { emisorDe } from "./reglas";
 
 export type FiltroCola = { emisor?: string; ver?: string };
 
 export const esDuplicado = (p: Pendiente) => p.duplicados.length > 0;
 export const esPorCompletar = (p: Pendiente) => !!p.evento.inferido?.includes(MARCA_POR_COMPLETAR);
+export const esSinEnlace = (p: Pendiente) => !enlaceOrigen(p.evento);
+export const esSinImagen = (p: Pendiente) => !p.cartel;
+export const esSinHora = (p: Pendiente) => sinHora(p.evento);
+
+/** Filtros de «ver»: clave en la URL → condición */
+export const VER: Record<string, (p: Pendiente) => boolean> = {
+  duplicados: esDuplicado,
+  completar: esPorCompletar,
+  sinenlace: esSinEnlace,
+  sinimagen: esSinImagen,
+  sinhora: esSinHora,
+};
 
 /** Los más próximos primero: son los que hay que publicar antes */
 export function ordenarCola(todos: Pendiente[]): Pendiente[] {
@@ -16,7 +29,7 @@ export function ordenarCola(todos: Pendiente[]): Pendiente[] {
 export function filtrarCola(ordenados: Pendiente[], { emisor, ver }: FiltroCola): Pendiente[] {
   return ordenados
     .filter((p) => (emisor ? emisorDe(p) === emisor : true))
-    .filter((p) => (ver === "duplicados" ? esDuplicado(p) : ver === "completar" ? esPorCompletar(p) : true));
+    .filter((p) => (ver && VER[ver] ? VER[ver](p) : true));
 }
 
 /** Solo valores simples, para ponerlos en una URL sin riesgo */

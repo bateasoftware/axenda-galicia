@@ -5,7 +5,8 @@ import { Suspense } from "react";
 import { almacen, almacenDisponible, NOMBRE_ALMACEN, type Pendiente } from "@/lib/almacen";
 import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
 import { emisorDe } from "@/lib/admin/reglas";
-import { consultaFiltro, esDuplicado, esPorCompletar, filtrarCola, ordenarCola } from "@/lib/admin/cola";
+import { consultaFiltro, esDuplicado, esPorCompletar, esSinEnlace, esSinHora, esSinImagen, filtrarCola, ordenarCola } from "@/lib/admin/cola";
+import { busquedasDe, enlaceOrigen } from "@/lib/admin/origen";
 import { fiablesAhora } from "@/lib/admin/fiables";
 import { COOKIE_LOTE, type ResultadoLote } from "@/lib/admin/lote";
 import CartelGenerico from "@/components/CartelGenerico";
@@ -184,6 +185,17 @@ async function Lista({ searchParams }: Pick<PageProps<"/admin">, "searchParams">
             <Link href={enlace({ emisor, ver: ver === "completar" ? undefined : "completar" })} className={chip(ver === "completar")}>
               ✍️ Por completar ({todos.filter(esPorCompletar).length})
             </Link>
+            {(
+              [
+                ["sinenlace", "🔗 Sin enlace de origen", esSinEnlace],
+                ["sinimagen", "🖼 Sin imagen", esSinImagen],
+                ["sinhora", "🕒 Sin hora", esSinHora],
+              ] as const
+            ).map(([clave, texto, f]) => (
+              <Link key={clave} href={enlace({ emisor, ver: ver === clave ? undefined : clave })} className={chip(ver === clave)}>
+                {texto} ({todos.filter(f).length})
+              </Link>
+            ))}
           </div>
         </div>
       )}
@@ -263,6 +275,26 @@ function Tarjeta({ p }: { p: Pendiente }) {
           ))}
         </div>
       </Link>
+      <Ayudas e={e} />
     </li>
+  );
+}
+
+/** Buscar el evento y abrir su página original sin entrar en la ficha (fuera del enlace de la tarjeta: no se pueden anidar) */
+function Ayudas({ e }: { e: Pendiente["evento"] }) {
+  const origen = enlaceOrigen(e);
+  const { general } = busquedasDe(e);
+  const boton = "grid h-10 w-10 place-items-center rounded-full border border-[var(--linea)] bg-white text-base hover:border-[var(--tinta)]";
+  return (
+    <div className="flex shrink-0 flex-col justify-center gap-2">
+      <a href={general} target="_blank" rel="noopener noreferrer" className={boton} title="Buscar en Google (título, fecha y lugar)" aria-label={`Buscar «${e.titulo}» en Google`}>
+        🔍
+      </a>
+      {origen && (
+        <a href={origen} target="_blank" rel="noopener noreferrer" className={boton} title="Página original del evento" aria-label="Página original del evento">
+          🔗
+        </a>
+      )}
+    </div>
   );
 }

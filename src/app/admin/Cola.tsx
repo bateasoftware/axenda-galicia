@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import CartelGenerico from "@/components/CartelGenerico";
 import type { Pendiente } from "@/lib/almacen";
+import { busquedasDe } from "@/lib/admin/origen";
 import { consultaFiltro, esDuplicado, esPorCompletar, type FiltroCola } from "@/lib/admin/cola";
 import { capitalizar, fechaLarga, hora } from "@/lib/fechas";
 
@@ -33,12 +34,12 @@ export default function Cola({ cola, actual, filtro, total }: { cola: Pendiente[
           const ini = e.sesiones[0]?.inicio;
           const activo = p.id === actual;
           return (
-            <li key={p.id}>
+            <li key={p.id} className="flex items-stretch gap-1">
               <Link
                 href={`/admin/${p.id}${consulta}`}
                 prefetch={false}
                 aria-current={activo ? "page" : undefined}
-                className={`flex gap-2 rounded-xl border p-2 text-sm ${activo ? "border-[var(--tinta)] bg-[var(--arena)]" : "border-[var(--linea)] bg-white hover:border-[var(--tinta)]"}`}
+                className={`flex min-w-0 flex-1 gap-2 rounded-xl border p-2 text-sm ${activo ? "border-[var(--tinta)] bg-[var(--arena)]" : "border-[var(--linea)] bg-white hover:border-[var(--tinta)]"}`}
               >
                 <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded bg-[var(--arena)]">
                   {p.cartel ? (
@@ -60,6 +61,16 @@ export default function Cola({ cola, actual, filtro, total }: { cola: Pendiente[
                   )}
                 </span>
               </Link>
+              <a
+                href={busquedasDe(e).general}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Buscar en Google (título, fecha y lugar)"
+                aria-label={`Buscar «${e.titulo}» en Google`}
+                className="grid w-7 shrink-0 place-items-center rounded-lg text-sm hover:bg-[var(--arena)]"
+              >
+                🔍
+              </a>
             </li>
           );
         })}

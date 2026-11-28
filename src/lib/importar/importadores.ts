@@ -3,6 +3,7 @@
 import { fechaHoraGalicia } from "../fechas";
 import type { Fuente } from "../fuentes";
 import type { Categoria, EventoBorrador } from "../tipos";
+import { urlEventoVigo } from "../admin/origen";
 import { leerICS, type EventoICS } from "./ics";
 import { normalizar, ubicar } from "./ubicar";
 
@@ -70,6 +71,7 @@ export function desdeICS(e: EventoICS, fuente: Fuente, recibido = fechaHoraGalic
   if (idioma === "gl") inferido.push("título en castellano (está en gallego)");
   if (u.lugar.aprox) inferido.push("coordenadas");
   if (e.recurrente) inferido.push("solo la primera fecha de una serie");
+  if (e.sinHora) inferido.push("hora: la fuente no la da");
   return {
     uid: e.uid,
     evento: {
@@ -134,10 +136,10 @@ export function desdeVigo(f: FilaVigo, fuente: Fuente, recibido = fechaHoraGalic
         recibido,
         id_fuente: fuente.id,
         uid: String(f.id),
-        url: fuente.url,
+        url: urlEventoVigo(f.id),
         ...(fuente.atribucion ? { atribucion: fuente.atribucion } : {}),
       },
-      inferido: ["resumen", "categorías", "coordenadas", ...(largo ? ["es un programa o exposición: ¿publicar o separar actos?"] : [])],
+      inferido: ["resumen", "categorías", "coordenadas", "hora: la fuente no la da", ...(largo ? ["es un programa o exposición: ¿publicar o separar actos?"] : [])],
       confianza: 0.6,
     },
   };

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { almacen, type Pendiente } from "@/lib/almacen";
 import { consultaFiltro, filtrarCola, filtroSeguro, ordenarCola, vecinos } from "@/lib/admin/cola";
+import { busquedasDe, enlaceOrigen, sinHora } from "@/lib/admin/origen";
 import { exigirAdmin } from "@/lib/admin/sesion";
 import { apoyoFormulario, valoresDe } from "@/lib/admin/valores";
 import { MARCA_POR_COMPLETAR } from "@/lib/sin-ia";
@@ -86,16 +87,9 @@ async function Editor({ params, searchParams }: Pick<PageProps<"/admin/[id]">, "
         <p className="text-[var(--gris)]">
           Llegó por <b>{e.fuente.canal}</b> el {e.fuente.recibido.replace("T", " a las ")}
           {e.fuente.id_fuente && <> · fuente {e.fuente.id_fuente}</>}
-          {e.fuente.url && (
-            <>
-              {" · "}
-              <a href={e.fuente.url} target="_blank" rel="noopener" className="underline">
-                original
-              </a>
-            </>
-          )}
           {" · "}confianza {Math.round(e.confianza * 100)} %
         </p>
+        <Comprobar e={e} conCartel={!!p.cartel} />
         {p.contacto && (
           <p className="rounded-xl bg-[var(--arena)] p-3">
             {p.contacto.canal === "whatsapp" ? "💬 Lo envió alguien por WhatsApp: se le avisará al publicar." : "✉️ Lo envió alguien por email: al publicar verás el mensaje para avisarle."}
@@ -171,6 +165,35 @@ async function Editor({ params, searchParams }: Pick<PageProps<"/admin/[id]">, "
         </aside>
       </div>
       </div>
+    </div>
+  );
+}
+
+/** Para validar lo que llega sin cartel: la página original, su atribución y búsquedas ya rellenadas */
+function Comprobar({ e, conCartel }: { e: Pendiente["evento"]; conCartel: boolean }) {
+  const origen = enlaceOrigen(e);
+  const { general, oficial } = busquedasDe(e);
+  const boton = "inline-flex items-center gap-1 rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 font-medium hover:border-[var(--tinta)]";
+  return (
+    <div className="rounded-xl border border-[var(--linea)] bg-white p-3">
+      <div className="flex flex-wrap gap-2">
+        {origen && (
+          <a href={origen} target="_blank" rel="noopener noreferrer" className={boton}>
+            🔗 Página original <span className="font-normal text-[var(--gris)]">({new URL(origen).hostname.replace(/^www\./, "")})</span>
+          </a>
+        )}
+        <a href={general} target="_blank" rel="noopener noreferrer" className={boton} title="Título, fecha y lugar">
+          🔍 Buscar en Google
+        </a>
+        {oficial && (
+          <a href={oficial.url} target="_blank" rel="noopener noreferrer" className={boton}>
+            🏛 Buscar en {oficial.sitio}
+          </a>
+        )}
+      </div>
+      {!origen && !conCartel && <p className="mt-2 text-[var(--gris)]">Sin cartel ni enlace de origen: compruébalo con la búsqueda antes de publicar.</p>}
+      {sinHora(e) && <p className="mt-2 font-medium text-amber-800">🕒 Sin hora: la fuente no la da. Búscala y ponla en la sesión, o publícalo como evento de todo el día.</p>}
+      {e.fuente.atribucion && <p className="mt-2 text-xs text-[var(--gris)]">Atribución (sale en la ficha): {e.fuente.atribucion}</p>}
     </div>
   );
 }
