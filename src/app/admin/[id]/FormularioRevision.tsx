@@ -282,7 +282,7 @@ export default function FormularioRevision({
         etiqueta={cartelActual ? "Cambiar el cartel" : "Añadir un cartel"}
         ayuda={cartelActual ? "Elige una imagen para sustituir el actual" : "Este evento no tiene cartel: puedes subir una imagen (JPG, PNG o WebP)"}
       >
-        <input name="cartel" type="file" accept="image/jpeg,image/png,image/webp" className="block w-full text-sm" />
+        <CartelPegable />
       </Campo>
 
       <details className="rounded-xl border border-[var(--linea)] bg-white p-3">
@@ -365,5 +365,70 @@ export default function FormularioRevision({
         <kbd>Ctrl/⌘ + S</kbd> guarda{modo === "pendiente" && <> · <kbd>Alt + ↑/↓</kbd> cambia de pendiente</>}
       </p>
     </form>
+  );
+}
+
+/** Elegir un archivo o pegar una imagen del portapapeles (Ctrl/⌘+V) en cualquier punto del formulario; también se puede arrastrar encima. */
+function CartelPegable() {
+  const entrada = useRef<HTMLInputElement>(null);
+  const [vista, setVista] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const poner = (f: File | undefined) => {
+    if (!f || !entrada.current) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return setAviso("Tiene que ser una imagen JPG, PNG o WebP.");
+    const dt = new DataTransfer();
+    dt.items.add(new File([f], f.name && f.name !== "image.png" ? f.name : `pegado-${Date.now()}.${f.type.split("/")[1].replace("jpeg", "jpg")}`, { type: f.type }));
+    entrada.current.files = dt.files;
+    setAviso(null);
+    setVista((antes) => {
+      if (antes) URL.revokeObjectURL(antes);
+      return URL.createObjectURL(f);
+    });
+  };
+
+  useEffect(() => {
+    // Solo se toma el pegado si trae una imagen: pegar texto en cualquier campo sigue igual
+    const alPegar = (ev: ClipboardEvent) => {
+      const f = [...(ev.clipboardData?.files ?? [])].find((x) => x.type.startsWith("image/"));
+      if (!f) return;
+      ev.preventDefault();
+      poner(f);
+    };
+    document.addEventListener("paste", alPegar);
+    return () => document.removeEventListener("paste", alPegar);
+  }, []);
+
+  return (
+    <div
+      onDragOver={(ev) => ev.preventDefault()}
+      onDrop={(ev) => {
+        ev.preventDefault();
+        poner(ev.dataTransfer.files[0]);
+      }}
+      className="rounded-xl border border-dashed border-[var(--linea)] p-3"
+    >
+      <input
+        ref={entrada}
+        name="cartel"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="block w-full text-sm"
+        onChange={(ev) => {
+          const f = ev.target.files?.[0];
+          setAviso(null);
+          setVista((antes) => {
+            if (antes) URL.revokeObjectURL(antes);
+            return f ? URL.createObjectURL(f) : null;
+          });
+        }}
+      />
+      <p className="mt-2 text-xs text-[var(--gris)]">O pega una imagen copiada (Ctrl/⌘+V) o arrástrala aquí.</p>
+      {aviso && <p role="alert" className="mt-1 text-xs text-red-700">{aviso}</p>}
+      {vista && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={vista} alt="Vista previa de la imagen elegida" className="mt-2 max-h-48 rounded-lg border border-[var(--linea)]" />
+      )}
+    </div>
   );
 }
