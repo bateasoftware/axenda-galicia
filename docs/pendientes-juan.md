@@ -29,7 +29,7 @@ Todo el código está hecho. Lo que queda depende de ti: crear cuentas, poner cl
 
 ## Cómo se usa el panel `/admin`
 
-- **En el móvil (iPhone):** entra en `https://axenda-galicia.vercel.app/admin` desde Safari, inicia sesión y usa *Compartir → Añadir a pantalla de inicio*. Se instala como una app aparte, **«Axenda Admin»**, que abre directamente el panel. En la web normal también hay un enlace «Administración» al final de la página.
+- **En el móvil (iPhone):** entra en `https://axenda-galicia.vercel.app/admin` desde Safari, inicia sesión y usa *Compartir → Añadir a pantalla de inicio*. Se instala como una app aparte, **«altofalante admin»**, que abre directamente el panel. En la web normal también hay un enlace «Administración» al final de la página.
   - La app instalada en iOS **no comparte la sesión con Safari**: la primera vez tienes que escribir la contraseña dentro de ella. Dura 30 días.
   - Si tenías añadida antes la web a la pantalla de inicio, bórrala y añade el panel de nuevo.
 
@@ -65,6 +65,18 @@ Para no tener que entrar tú en cada web, hay una **sesión aparte** que lo hace
 - **Límites:** solo lee webs que dejan leerse (respeta `robots.txt`). **Nada de Instagram ni Facebook**: si el cartel está ahí, pásale la imagen o el texto. Nunca publica ella.
 - **Cómo funciona por dentro:** `npm run anadir-pendiente` y la guía `docs/procesar-envios.md`.
 
+## Cambio de nombre a altofalante: lo que te toca
+
+La web ya se llama altofalante (logotipo, colores, iconos, textos). Lo que depende de tus cuentas:
+
+- [ ] **Dominio.** Mira si están libres `altofalante.gal` y `altofalante.com` (o `.es`). El `.gal` refuerza lo local. Cuando lo tengas, añádelo en Vercel (*Settings → Domains*) y pon `NEXT_PUBLIC_SITE_URL=https://altofalante.gal` en las variables de Vercel. Hasta entonces la web sigue en `axenda-galicia.vercel.app` y funciona igual.
+- [ ] **Vercel (opcional):** *Settings → General → Project Name* → `altofalante`. Cambia la dirección gratuita a `altofalante.vercel.app` (la antigua deja de funcionar). Si vas a comprar dominio, no hace falta: el dominio manda.
+- [ ] **GitHub (opcional):** renombrar el repositorio `bateasoftware/axenda-galicia` a `altofalante` (*Settings → General → Repository name*). GitHub redirige el nombre antiguo y Vercel sigue conectado. Si quieres, lo hago yo; luego hay que actualizar el remoto local (`git remote set-url origin …`).
+- [ ] **Search Console:** con el dominio nuevo, añade la propiedad nueva y envía el sitemap. Si cambias de dirección, usa *Cambio de dirección* en la propiedad antigua.
+- [ ] **Email y redes:** si creas `hola@altofalante.gal` o cuentas en redes, pásamelo y lo pongo en `NEXT_PUBLIC_EMAIL_ENVIO` y en el guion de contacto.
+- [ ] **Lema:** «Que se saiba.» está puesto como propuesta (pie de página e imagen para compartir), en `src/lib/sitio.ts`. El botón de la cabecera sigue siendo «+ Enviar evento» (la interfaz va en castellano); si prefieres «Corre a voz», dímelo.
+- **No cambia:** la base de datos de Turso se sigue llamando `axenda` (no hace falta tocarla) y la app instalada en el móvil se actualiza sola con el icono nuevo (en iOS, a veces hay que borrarla y añadirla de nuevo para ver el icono nuevo).
+
 ## Ahora (todo gratis), en este orden
 
 ### 1. Crear la base de datos en Turso
@@ -86,7 +98,7 @@ turso db show axenda --url
 turso db tokens create axenda
 ```
 
-El primer comando crea una base **nueva** solo para Axenda, sin tocar la de `radar-gasolineras`. El segundo te da la **URL** (empieza por `libsql://`) y el tercero un **token** (una cadena larga). Guarda los dos en tu gestor de contraseñas.
+El primer comando crea una base **nueva** solo para el proyecto, sin tocar la de `radar-gasolineras`. El segundo te da la **URL** (empieza por `libsql://`) y el tercero un **token** (una cadena larga). Guarda los dos en tu gestor de contraseñas.
 
 No hay que crear tablas ni configurar nada más en Turso: la web las crea sola la primera vez.
 
@@ -214,7 +226,7 @@ Todo sin cookies ni datos personales: **no hace falta banner de consentimiento**
 
 ### WhatsApp Business (Cloud API)
 
-- **Qué hace:** los organizadores reenvían el cartel a un número de Axenda. Les contesta "¡Recibido!" y les avisa al publicar.
+- **Qué hace:** los organizadores reenvían el cartel a un número de altofalante. Les contesta "¡Recibido!" y les avisa al publicar.
 - **Coste:**
   - una línea de teléfono que **no** tenga WhatsApp instalado;
   - recibir mensajes y contestar en menos de 24 h: gratis;

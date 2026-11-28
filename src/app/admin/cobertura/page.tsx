@@ -27,7 +27,7 @@ const NOMBRE_CANAL: Record<string, string> = {
 };
 const COLOR_CANAL: Record<string, string> = {
   whatsapp: "#1f8f4e",
-  formulario: "#0b6e8a",
+  formulario: "#c4381f",
   email: "#6941c6",
   ics: "#b54708",
   "programa-pdf": "#c11574",

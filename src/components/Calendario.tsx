@@ -74,7 +74,7 @@ export default function Calendario({ eventos, hoy }: { eventos: Evento[]; hoy: s
                 aria-pressed={activo}
                 aria-label={`${capitalizar(fechaLarga(d))}${esHoy ? " (hoy)" : ""}: ${evs.length ? `${evs.length} ${evs.length === 1 ? "evento" : "eventos"}` : "sin eventos"}`}
                 className={`flex aspect-square min-w-0 flex-col items-center justify-start rounded-xl p-1 text-sm transition sm:aspect-[4/3] ${
-                  activo ? "bg-[var(--tinta)] text-white" : evs.length ? "bg-[var(--arena)] hover:bg-[#efe3cc]" : "text-[var(--gris)]/60"
+                  activo ? "bg-[var(--tinta)] text-white" : evs.length ? "bg-[var(--arena)] hover:bg-[#e3dccd]" : "text-[var(--gris)]/60"
                 } ${esHoy && !activo ? "ring-2 ring-[var(--mar)]" : ""}`}
               >
                 <span className="font-medium" aria-hidden>{Number(d.slice(8))}</span>

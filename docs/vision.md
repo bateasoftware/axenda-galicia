@@ -1,8 +1,8 @@
-# Axenda: visión, objetivos y decisiones
+# altofalante: visión, objetivos y decisiones
 
 ## Qué es
 
-Una agenda de eventos locales de Galicia que nace de los carteles que la gente ya comparte por WhatsApp y redes sociales: cuentacuentos, encendidos de Navidad, partidos solidarios, mercadillos, cine municipal… Hoy esa información está dispersa y se pierde. Axenda la centraliza, la estructura con IA y la presenta ordenada **por fecha, por ubicación (mapa) y por tipo**.
+Una agenda de eventos locales de Galicia que nace de los carteles que la gente ya comparte por WhatsApp y redes sociales: cuentacuentos, encendidos de Navidad, partidos solidarios, mercadillos, cine municipal… Hoy esa información está dispersa y se pierde. altofalante (antes «Axenda») la centraliza, la estructura con IA y la presenta ordenada **por fecha, por ubicación (mapa) y por tipo**.
 
 Visión a largo plazo: convertirse en **el sitio de referencia de lo que pasa en cada comarca de Galicia** y, más adelante, en un medio local que publique noticias y comunicados que no llegan a los medios tradicionales.
 

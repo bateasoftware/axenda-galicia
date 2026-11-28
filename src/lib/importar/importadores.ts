@@ -6,7 +6,7 @@ import type { Categoria, EventoBorrador } from "../tipos";
 import { leerICS, type EventoICS } from "./ics";
 import { normalizar, ubicar } from "./ubicar";
 
-export const USER_AGENT = "AxendaBot/0.1 (+https://axenda-galicia.vercel.app/enviar)";
+export const USER_AGENT = "AltofalanteBot/0.1 (+https://axenda-galicia.vercel.app/enviar)";
 
 /** Candidato a pendiente: el evento y la clave para no importarlo dos veces */
 export type Candidato = { evento: EventoBorrador; uid: string };

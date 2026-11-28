@@ -8,7 +8,7 @@ export default function Generador({ concellos, origen }: { concellos: { nombre: 
   const [tema, setTema] = useState<"claro" | "oscuro">("claro");
   const [copiado, setCopiado] = useState(false);
   const atributos = `${concello ? ` data-concello="${concello}"` : ""} data-n="${n}" data-tema="${tema}"`;
-  const codigo = `<div data-axenda-agenda${atributos}></div>\n<script src="${origen}/widget.js" async></script>`;
+  const codigo = `<div data-altofalante${atributos}></div>\n<script src="${origen}/widget.js" async></script>`;
   // La vista previa usa este mismo servidor (sirve también en local y en las previsualizaciones)
   const q = new URLSearchParams({ n: String(n), tema, ...(concello ? { concello } : {}) });
   const campo = "rounded-xl border border-[var(--linea)] bg-white px-3 py-2";

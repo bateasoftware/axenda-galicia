@@ -109,7 +109,7 @@ export default function GestorLugares({
       <div className="lg:sticky lg:top-4 lg:self-start">
         <MapaLugares lugares={lugares} punto={punto} onClicLugar={(l) => (setMensaje(null), setEdicion(desdeLugar(l)))} onClicMapa={clicEnMapa} />
         <p className="mt-2 text-xs text-[var(--gris)]">
-          <span className="text-[#0b5c8a]">●</span> exacto · <span className="text-[#d97706]">●</span> aproximado ({aproximados}) ·{" "}
+          <span className="text-[#16181d]">●</span> exacto · <span className="text-[#d97706]">●</span> aproximado ({aproximados}) ·{" "}
           <span className="text-red-600">●</span> el que editas. {edicion ? "Haz clic en el mapa para moverlo." : "Clic en un punto para editarlo, o en el mapa para crear uno nuevo ahí."}
         </p>
       </div>
@@ -299,7 +299,7 @@ export default function GestorLugares({
                   onClick={() => (setMensaje(null), setEdicion(desdeLugar(l)))}
                   className={`flex w-full items-start gap-2 rounded-xl border p-2.5 text-left text-sm ${activo ? "border-[var(--tinta)] bg-[var(--arena)]" : "border-[var(--linea)] bg-white hover:border-[var(--tinta)]"}`}
                 >
-                  <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${l.aprox ? "bg-[#d97706]" : "bg-[#0b5c8a]"}`} />
+                  <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${l.aprox ? "bg-[#d97706]" : "bg-[#16181d]"}`} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{l.nombre}</span>
                     <span className="block truncate text-xs text-[var(--gris)]">

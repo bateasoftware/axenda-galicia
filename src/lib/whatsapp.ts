@@ -149,8 +149,8 @@ export class ArchivoGrande extends Error {
 }
 
 export const RESPUESTAS = {
-  recibido: "¡Recibido! 🙌 Lo revisamos y te avisamos por aquí en cuanto esté publicado en Axenda.",
-  recibidoVarios: (n: number) => `¡Recibido! 🙌 Hemos encontrado ${n} eventos. Los revisamos y te avisamos por aquí en cuanto estén publicados en Axenda.`,
+  recibido: "¡Recibido! 🙌 Lo revisamos y te avisamos por aquí en cuanto esté publicado en altofalante.",
+  recibidoVarios: (n: number) => `¡Recibido! 🙌 Hemos encontrado ${n} eventos. Los revisamos y te avisamos por aquí en cuanto estén publicados en altofalante.`,
   repetido: "Este cartel ya nos había llegado: lo tenemos en revisión o publicado. ¡Gracias!",
   sinEvento:
     "No hemos encontrado ningún evento en tu mensaje. Mándanos el cartel (foto o PDF) o escribe qué es, cuándo (día y hora) y dónde, y lo publicamos gratis en la agenda.",
@@ -159,4 +159,4 @@ export const RESPUESTAS = {
   error: "Ha habido un problema al leer tu envío. Lo miramos a mano y te decimos algo. ¡Gracias por tu paciencia!",
 };
 
-export const mensajePublicado = (titulo: string, url: string) => `Tu evento ya está en Axenda: ${titulo}\n${url}\n\n¡Gracias por mandarlo! Compártelo con quien quieras.`;
+export const mensajePublicado = (titulo: string, url: string) => `Tu evento ya está en altofalante: ${titulo}\n${url}\n\n¡Gracias por mandarlo! Compártelo con quien quieras.`;

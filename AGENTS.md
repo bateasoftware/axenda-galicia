@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-## Proyecto Axenda
+## Proyecto altofalante (antes «Axenda»)
 
 - **Lee `docs/vision.md` antes de proponer funcionalidades**: concepto, público, fases, monetización y decisiones ya tomadas.
 - Interfaz y contenido en castellano (los eventos pueden traer título en gallego, `titulo_gl`).
@@ -25,7 +25,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Lo que dependa de "hoy" se calcula en el cliente (`hoyGalicia`), nunca en el render estático.
 - Fuentes autoalojadas con @fontsource (no usar next/font/google).
 - Estadísticas: sin cookies ni datos personales (no metas Google Analytics, ni guardes IP o identificadores). Métricas propias en `src/lib/metricas/` (contadores por día en la tabla `metricas`, vía `/api/m` con `sendBeacon`); informes en `/admin/estadisticas`, `/informe/<organizador>/<token>` y `/anunciate`. Vercel Analytics y Speed Insights en `src/components/Analitica.tsx`.
-- Marca: el original está en `marca/axenda-logo-original.webp`. `npm run logos` regenera el logo, el icono y los iconos de la app (favicon, iOS, PWA); no los edites a mano. En la cabecera va el logo completo y, donde solo cabe un icono, `public/marca/icono.png`.
+- Marca altofalante («a "o" que fala»; concepto en `marca/altofalante-concepto.png`): colores y SVG del símbolo, icono de app y marcador del mapa en `src/lib/marca.ts`; `<Logotipo>` y `<Simbolo>` en `src/components/Marca.tsx` (el logotipo es texto en Space Grotesk seminegrita con la «o» como símbolo, no una imagen). `npm run logos` regenera favicon e iconos de iOS/PWA y `marca/*.svg`; no los edites a mano. Nombre y lema en `src/lib/sitio.ts`. Los identificadores internos (cookies `axenda_*`, UID de calendario `@axenda`) se mantienen a propósito.
 - Tests en `tests/` con `node:test` (`npm test`). Si tocas `src/lib/fechas.ts` o `src/lib/validacion.ts`, añade o ajusta sus tests.
 - Antes de terminar: `npm run validar && npm test && npm run lint && npm run build` (lo mismo que ejecuta la CI en GitHub).
 

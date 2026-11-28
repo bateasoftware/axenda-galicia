@@ -1,14 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --tinta: #0b2545;   /* azul ría */
-  --mar: #0b6e8a;     /* acento */
-  --arena: #f6efe2;   /* fondo cálido */
-  --fondo: #fcfaf6;
-  --linea: #e7dfd0;
-  --gris: #5f6b7a;
+  /* Marca altofalante (src/lib/marca.ts) */
+  --tinta: #16181d;   /* casi negro: texto y botones principales */
+  --marca: #e2452b;   /* rojo de marca: el punto del símbolo, detalles */
+  --mar: #c4381f;     /* acento para enlaces y botones: el rojo un punto más oscuro, legible con texto blanco */
+  --arena: #ebe5d9;   /* fondos suaves (tarjetas vacías, chips activos) */
+  --fondo: #f4f1ea;   /* crema */
+  --linea: #e1dacd;
+  --gris: #5d5f66;
   --font-texto: "Inter Variable", system-ui, sans-serif;
-  --font-titulo: "Fraunces Variable", Georgia, serif;
+  --font-titulo: "Space Grotesk Variable", "Inter Variable", system-ui, sans-serif;
 }
 
 @theme inline {
@@ -22,9 +24,17 @@ body {
 }
 
 .font-display {
-  font-family: var(--font-titulo), Georgia, serif;
+  font-family: var(--font-titulo);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+}
+
+/* El logotipo: Space Grotesk seminegrita, apretada */
+.font-marca {
+  font-family: var(--font-titulo);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
 .leaflet-container {

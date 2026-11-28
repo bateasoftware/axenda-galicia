@@ -1,14 +1,15 @@
-/* Widget "Agenda de la zona" de Axenda.
- * Uso: <div data-axenda-agenda data-concello="nigran" data-n="6" data-tema="claro"></div>
+/* Widget "Agenda de la zona" de altofalante.
+ * Uso: <div data-altofalante data-concello="nigran" data-n="6" data-tema="claro"></div>
+ * (también vale el nombre antiguo, data-axenda-agenda, por las webs que ya lo tengan puesto)
  *      <script src="https://axenda-galicia.vercel.app/widget.js" async></script>
  */
 (function () {
   var script = document.currentScript;
   var origen = script ? new URL(script.src).origin : "https://axenda-galicia.vercel.app";
   var marcos = {};
-  document.querySelectorAll("[data-axenda-agenda]:not([data-axenda-listo])").forEach(function (el, i) {
-    el.setAttribute("data-axenda-listo", "");
-    var id = "axenda-" + i + "-" + Math.random().toString(36).slice(2, 7);
+  document.querySelectorAll("[data-altofalante]:not([data-altofalante-listo]),[data-axenda-agenda]:not([data-altofalante-listo])").forEach(function (el, i) {
+    el.setAttribute("data-altofalante-listo", "");
+    var id = "altofalante-" + i + "-" + Math.random().toString(36).slice(2, 7);
     var q = new URLSearchParams({ id: id });
     ["concello", "n", "tema"].forEach(function (k) {
       var v = el.getAttribute("data-" + k);
@@ -24,7 +25,7 @@
     marcos[id] = f;
   });
   window.addEventListener("message", function (e) {
-    if (e.origin !== origen || !e.data || e.data.axenda !== "altura" || !marcos[e.data.id]) return;
+    if (e.origin !== origen || !e.data || e.data.altofalante !== "altura" || !marcos[e.data.id]) return;
     marcos[e.data.id].style.height = e.data.altura + "px";
   });
 })();

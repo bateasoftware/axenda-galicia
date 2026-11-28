@@ -3,8 +3,8 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useRef } from "react";
 import type { Evento } from "@/lib/tipos";
-import { CATEGORIAS } from "@/lib/categorias";
 import { fechaCorta, hora, primerInicio } from "@/lib/fechas";
+import { COLORES, svgMarcador } from "@/lib/marca";
 
 // Leaflet directo (sin react-leaflet): el mapa se crea y se destruye en un solo efecto. Con react-leaflet, al volver atrás a una
 // página con mapa (React vuelve a montar lo que estaba oculto) se lanzaba «Map container is being reused by another instance»
@@ -16,7 +16,6 @@ type Punto = {
   lat: number;
   lng: number;
   lugar: string;
-  color: string;
   varios: boolean;
   eventos: { slug: string; titulo: string; cuando: string }[];
 };
@@ -27,7 +26,7 @@ function agrupar(eventos: Evento[]): Punto[] {
   for (const e of eventos)
     for (const l of e.lugares) {
       const clave = `${l.lat.toFixed(4)},${l.lng.toFixed(4)}`;
-      const p = m.get(clave) ?? { lat: l.lat, lng: l.lng, lugar: l.nombre, color: CATEGORIAS[e.categorias[0]]?.color ?? "#0b5c8a", varios: false, eventos: [] };
+      const p = m.get(clave) ?? { lat: l.lat, lng: l.lng, lugar: l.nombre, varios: false, eventos: [] };
       if (!p.eventos.some((x) => x.slug === e.slug)) p.eventos.push({ slug: e.slug, titulo: e.titulo, cuando: `${fechaCorta(primerInicio(e))} ${hora(primerInicio(e))}`.trim() });
       p.varios = p.eventos.length > 1;
       m.set(clave, p);
@@ -51,7 +50,7 @@ function burbuja(p: Punto): HTMLElement {
     cuando.textContent = e.cuando;
     const enlace = document.createElement("a");
     enlace.href = `/evento/${e.slug}`;
-    enlace.style.cssText = "font-weight:600;color:#0b2545";
+    enlace.style.cssText = `font-weight:600;color:${COLORES.tinta}`;
     enlace.textContent = e.titulo;
     fila.append(cuando, enlace);
     raiz.append(fila);
@@ -74,16 +73,20 @@ export default function Mapa({ eventos, alto }: { eventos: Evento[]; alto?: numb
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(mapa);
-      for (const p of puntos)
-        L.circleMarker([p.lat, p.lng], {
-          radius: p.varios ? 13 : 10,
-          color: "#fff",
-          weight: 2,
-          fillColor: p.varios ? "#0b2545" : p.color,
-          fillOpacity: 0.95,
-        })
-          .addTo(mapa)
-          .bindPopup(() => burbuja(p));
+      // El marcador es el símbolo de la marca; si hay varios eventos en el mismo sitio, lleva su número
+      for (const p of puntos) {
+        const numero = p.varios
+          ? `<span style="position:absolute;top:-6px;right:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:${COLORES.rojo};color:#fff;font:600 12px/20px system-ui,sans-serif;text-align:center;border:2px solid #fff">${p.eventos.length}</span>`
+          : "";
+        const icono = L.divIcon({
+          className: "",
+          html: `<div style="position:relative;width:36px;height:48px">${svgMarcador()}${numero}</div>`,
+          iconSize: [36, 48],
+          iconAnchor: [18, 47],
+          popupAnchor: [0, -44],
+        });
+        L.marker([p.lat, p.lng], { icon: icono, title: p.lugar }).addTo(mapa).bindPopup(() => burbuja(p));
+      }
       const coords = puntos.map((p) => [p.lat, p.lng] as [number, number]);
       if (!coords.length) mapa.setView(CENTRO_COMARCA, 11);
       else if (coords.length === 1) mapa.setView(coords[0], 15);

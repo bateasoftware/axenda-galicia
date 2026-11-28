@@ -1,17 +1,35 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { COLORES } from "./marca";
 import { SITIO } from "./sitio";
 
 // Imagen para compartir (WhatsApp, redes, buscadores) cuando la página no tiene cartel
 export const TAMANO_OG = { width: 1200, height: 630 };
 
-// El logo se lee una vez (no depende de la petición) y se incrusta como data URL
-const LOGO = `data:image/png;base64,${(await readFile(join(process.cwd(), "public/marca/logo.png"))).toString("base64")}`;
-const PROPORCION_LOGO = 1476 / 347;
+// Space Grotesk (la letra de la marca, licencia OFL) se lee una vez y se incrusta en la imagen.
+// Rutas fijas para que el despliegue incluya los ficheros (copias de @fontsource/space-grotesk en marca/fuentes).
+const [SEMINEGRITA, NEGRITA] = await Promise.all([
+  readFile(join(process.cwd(), "marca/fuentes/space-grotesk-600.woff")),
+  readFile(join(process.cwd(), "marca/fuentes/space-grotesk-700.woff")),
+]);
+
+/** El logotipo: «alt» + la «o» que fala + «falante» */
+function Logotipo({ tamano }: { tamano: number }) {
+  const o = tamano * 0.54;
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", fontFamily: "Space Grotesk", fontWeight: 600, fontSize: tamano, letterSpacing: "-0.03em", lineHeight: 1, color: COLORES.tinta }}>
+      <span>alt</span>
+      <svg width={o} height={o} viewBox="0 0 100 100" style={{ margin: `0 ${tamano * 0.02}px ${tamano * 0.2}px` }}>
+        <circle cx="50" cy="50" r="41" fill="none" stroke={COLORES.tinta} strokeWidth="18" />
+        <circle cx="50" cy="50" r="17" fill={COLORES.rojo} />
+      </svg>
+      <span>falante</span>
+    </div>
+  );
+}
 
 export function imagenOG(titulo: string, subtitulo: string) {
-  const altoLogo = 96;
   return new ImageResponse(
     (
       <div
@@ -22,25 +40,28 @@ export function imagenOG(titulo: string, subtitulo: string) {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 72,
-          background: "#fcfaf6",
-          color: "#0b2545",
+          background: COLORES.crema,
+          color: COLORES.tinta,
+          fontFamily: "Space Grotesk",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOGO} alt={SITIO.nombre} width={Math.round(altoLogo * PROPORCION_LOGO)} height={altoLogo} />
+        <Logotipo tamano={84} />
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05 }}>{titulo}</div>
-          <div style={{ fontSize: 34, color: "#5f6b7a" }}>{subtitulo}</div>
+          <div style={{ fontSize: 72, fontWeight: 700, lineHeight: 1.05, letterSpacing: "-0.02em" }}>{titulo}</div>
+          <div style={{ fontSize: 34, fontWeight: 600, color: "#5d5f66" }}>{subtitulo}</div>
         </div>
-        <div style={{ display: "flex", gap: 16, fontSize: 28, color: "#0b6e8a" }}>
-          <span>📅 Calendario</span>
-          <span>·</span>
-          <span>🗺️ Mapa</span>
-          <span>·</span>
-          <span>Gratis</span>
+        <div style={{ display: "flex", gap: 16, fontSize: 28, fontWeight: 600, color: COLORES.rojo }}>
+          <span>{SITIO.eslogan}</span>
+          <span style={{ color: "#5d5f66" }}>· Agenda de Val Miñor y Vigo · Mapa y calendario</span>
         </div>
       </div>
     ),
-    TAMANO_OG,
+    {
+      ...TAMANO_OG,
+      fonts: [
+        { name: "Space Grotesk", data: SEMINEGRITA, weight: 600, style: "normal" },
+        { name: "Space Grotesk", data: NEGRITA, weight: 700, style: "normal" },
+      ],
+    },
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { ResultadoPublicacion } from "@/lib/admin/publicacion";
+import { SITIO } from "@/lib/sitio";
 
 export default function Publicado({ estado }: { estado: ResultadoPublicacion }) {
   const [copiado, setCopiado] = useState(false);
@@ -39,7 +40,7 @@ export default function Publicado({ estado }: { estado: ResultadoPublicacion }) 
         {a.tipo === "email" && (
           <p className="mt-1 text-sm">
             ✉️{" "}
-            <a className="underline" href={`mailto:${a.email}?subject=${encodeURIComponent("Tu evento ya está en Axenda")}&body=${encodeURIComponent(estado.mensaje)}`}>
+            <a className="underline" href={`mailto:${a.email}?subject=${encodeURIComponent(`Tu evento ya está en ${SITIO.nombre}`)}&body=${encodeURIComponent(estado.mensaje)}`}>
               Responder a quien lo envió
             </a>{" "}
             (el email no se guarda).

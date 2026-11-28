@@ -179,7 +179,7 @@ export function generarICS(e: Evento, url: string): string {
   const fmt = (iso: string) => iso.replace(/[-:]/g, "").slice(0, 13) + "00";
   const esc = (t: string) => t.replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
   const lugar = e.lugares.map((l) => [l.nombre, l.direccion].filter(Boolean).join(", ")).join(" / ");
-  const lineas = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Axenda//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", ...VTIMEZONE_MADRID];
+  const lineas = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//altofalante//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", ...VTIMEZONE_MADRID];
   e.sesiones.forEach((s, i) => {
     if (sinHora(s.inicio)) {
       // Evento de día completo: DTEND es exclusivo (el día siguiente al último)

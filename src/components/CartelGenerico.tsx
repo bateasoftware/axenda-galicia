@@ -5,8 +5,8 @@ import type { Categoria } from "@/lib/tipos";
 // Ilustración genérica para los eventos sin cartel, según su categoría. Es solo presentación: no se guarda
 // en ningún sitio y, si el evento tiene cartel, no se usa. Sin texto, personas ni marcas, y con un estilo
 // ilustrado que no se confunde con un cartel real. Lienzo 300×400 (3:4), como los carteles.
-const AZUL = "#0b2545";
-const MAR = "#0b6e8a";
+const AZUL = "#16181d"; // tinta de marca
+const MAR = "#c4381f"; // rojo de marca, algo más oscuro
 const SALVIA = "#9dbfb0";
 const NARANJA = "#f27d52";
 const CREMA = "#fbf3e6";

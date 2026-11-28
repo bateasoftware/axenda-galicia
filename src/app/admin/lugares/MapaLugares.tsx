@@ -61,7 +61,7 @@ export default function MapaLugares({
     if (!mapa || !L || !capa) return;
     capa.clearLayers();
     for (const l of lugares)
-      L.circleMarker([l.lat, l.lng], { radius: 7, color: "#fff", weight: 2, fillColor: l.aprox ? "#d97706" : "#0b5c8a", fillOpacity: 0.9, bubblingMouseEvents: false })
+      L.circleMarker([l.lat, l.lng], { radius: 7, color: "#fff", weight: 2, fillColor: l.aprox ? "#d97706" : "#16181d", fillOpacity: 0.9, bubblingMouseEvents: false })
         .bindTooltip(`${l.nombre} · ${l.concello}${l.aprox ? " (aprox.)" : ""}`)
         .on("click", () => manejadores.current.onClicLugar(l))
         .addTo(capa);

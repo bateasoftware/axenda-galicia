@@ -44,13 +44,13 @@ Se revisan a mano con la frecuencia de `fuentes.json`. Las webs municipales publ
 El objetivo es que cada organizador mande sus carteles sin que se lo pidamos. Para eso:
 
 - Formulario en `/enviar`, email y, cuando exista, el número de WhatsApp.
-- Al publicar, el panel genera el mensaje "Tu evento ya está en Axenda: <enlace>" para devolvérselo al organizador. Si vino por WhatsApp, se le manda solo.
+- Al publicar, el panel genera el mensaje "Tu evento ya está en altofalante: <enlace>" para devolvérselo al organizador. Si vino por WhatsApp, se le manda solo.
 - Página pública `/organizador/<slug>` con todos sus eventos, para que la compartan.
 - Widget "Agenda de la zona" (`/widget`) para webs de concellos, hoteles y asociaciones.
 
 Guion de contacto (email o WhatsApp a asociaciones y ANPAs):
 
-> Hola, somos Axenda, una agenda gratuita de eventos de Val Miñor y Vigo. Si nos reenviáis el cartel de vuestras actividades a [email / WhatsApp], lo publicamos gratis en la agenda, en el mapa y en el calendario, con enlace a vuestra página. Así es como queda: [enlace a /organizador/…].
+> Hola, somos altofalante, una agenda gratuita de eventos de Val Miñor y Vigo. Si nos reenviáis el cartel de vuestras actividades a [email / WhatsApp], lo publicamos gratis en la agenda, en el mapa y en el calendario, con enlace a vuestra página. Así es como queda: [enlace a /organizador/…].
 
 ### 4. Prensa y agregadores: solo alerta
 
@@ -85,7 +85,7 @@ El mismo evento suele llegar por varias vías: el cartel del organizador, la web
 - No hacer scraping de Instagram, Facebook ni de webs cuyo `robots.txt` lo prohíba (p. ej. `turismo.gal/axenda-cultural/`).
 - No copiar textos de prensa ni de agregadores. Tampoco descripciones largas de fuentes oficiales: resumen propio.
 - No publicar nada importado sin revisar.
-- No descargar más de una vez al día ni sin identificar el bot (`User-Agent: AxendaBot`).
+- No descargar más de una vez al día ni sin identificar el bot (`User-Agent: AltofalanteBot`).
 - No quitar la atribución de los eventos que vienen de datos con licencia CC BY u ODC-BY.
 
 ## Cómo se usa
