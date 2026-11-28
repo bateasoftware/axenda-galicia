@@ -373,6 +373,26 @@ function CartelPegable() {
   const entrada = useRef<HTMLInputElement>(null);
   const [vista, setVista] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [zona, setZona] = useState(false);
+
+  // En el móvil no hay Ctrl+V: el botón lee el portapapeles (el navegador pide permiso o enseña «Pegar»)
+  async function pegarDelPortapapeles() {
+    setAviso(null);
+    try {
+      for (const item of await navigator.clipboard.read()) {
+        const tipo = item.types.find((t) => t.startsWith("image/"));
+        if (tipo) {
+          const blob = await item.getType(tipo);
+          return poner(new File([blob], "", { type: tipo }));
+        }
+      }
+      setAviso("No hay ninguna imagen copiada.");
+    } catch {
+      // Sin permiso o sin soporte: queda la zona donde se mantiene pulsado para pegar
+      setZona(true);
+      setAviso("No he podido leer el portapapeles. Mantén pulsado en el recuadro de abajo y elige «Pegar».");
+    }
+  }
 
   const poner = (f: File | undefined) => {
     if (!f || !entrada.current) return;
@@ -423,7 +443,25 @@ function CartelPegable() {
           });
         }}
       />
-      <p className="mt-2 text-xs text-[var(--gris)]">O pega una imagen copiada (Ctrl/⌘+V) o arrástrala aquí.</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" onClick={pegarDelPortapapeles} className="rounded-full border border-[var(--linea)] bg-white px-3 py-1.5 text-sm font-medium hover:border-[var(--tinta)]">
+          📋 Pegar imagen
+        </button>
+        <span className="text-xs text-[var(--gris)]">o Ctrl/⌘+V, o arrástrala aquí.</span>
+      </div>
+      {zona && (
+        <div
+          contentEditable
+          suppressContentEditableWarning
+          inputMode="none"
+          role="textbox"
+          aria-label="Mantén pulsado y elige Pegar para pegar la imagen"
+          onInput={(ev) => (ev.currentTarget.textContent = "")}
+          className="mt-2 grid min-h-16 place-items-center rounded-lg bg-[var(--arena)] p-3 text-center text-xs text-[var(--gris)]"
+        >
+          Mantén pulsado aquí y elige «Pegar»
+        </div>
+      )}
       {aviso && <p role="alert" className="mt-1 text-xs text-red-700">{aviso}</p>}
       {vista && (
         // eslint-disable-next-line @next/next/no-img-element
